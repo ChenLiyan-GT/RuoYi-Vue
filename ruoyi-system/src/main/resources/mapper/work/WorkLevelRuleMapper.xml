@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.work.mapper.WorkLevelRuleMapper">
+
+	<resultMap type="WorkLevelRule" id="WorkLevelRuleResult">
+		<id     property="ruleId"        column="rule_id"       />
+		<result property="level"         column="level"         />
+		<result property="levelName"     column="level_name"    />
+		<result property="minStage"      column="min_stage"     />
+		<result property="maxStage"      column="max_stage"     />
+		<result property="description"   column="description"   />
+		<result property="createTime"    column="create_time"   />
+	</resultMap>
+	
+	<sql id="selectLevelRuleVo">
+        select rule_id, level, level_name, min_stage, max_stage, description, create_time 
+		from work_level_rule
+    </sql>
+	
+	<select id="selectLevelRuleList" parameterType="WorkLevelRule" resultMap="WorkLevelRuleResult">
+	    <include refid="selectLevelRuleVo"/>
+		<where>
+			<if test="level != null">
+				AND level = #{level}
+			</if>
+			<if test="levelName != null and levelName != ''">
+				AND level_name like concat('%', #{levelName}, '%')
+			</if>
+		</where>
+		order by level asc
+	</select>
+	
+	<select id="selectLevelRuleAll" resultMap="WorkLevelRuleResult">
+		<include refid="selectLevelRuleVo"/>
+		order by level asc
+	</select>
+	
+	<select id="selectLevelRuleById" parameterType="Long" resultMap="WorkLevelRuleResult">
+		<include refid="selectLevelRuleVo"/>
+		where rule_id = #{ruleId}
+	</select>
+	
+	<select id="checkLevelUnique" parameterType="Integer" resultMap="WorkLevelRuleResult">
+		<include refid="selectLevelRuleVo"/>
+		where level = #{level} limit 1
+	</select>
+	
+ 	<delete id="deleteLevelRuleByIds" parameterType="Long">
+ 		delete from work_level_rule where rule_id in
+ 		<foreach collection="array" item="ruleId" open="(" separator="," close=")">
+ 			#{ruleId}
+        </foreach>
+ 	</delete>
+ 	
+ 	<update id="updateLevelRule" parameterType="WorkLevelRule">
+ 		update work_level_rule
+ 		<set>
+ 			<if test="level != null">level = #{level},</if>
+ 			<if test="levelName != null and levelName != ''">level_name = #{levelName},</if>
+ 			<if test="minStage != null and minStage != ''">min_stage = #{minStage},</if>
+ 			<if test="maxStage != null and maxStage != ''">max_stage = #{maxStage},</if>
+ 			<if test="description != null">description = #{description},</if>
+ 		</set>
+ 		where rule_id = #{ruleId}
+	</update>
+ 	
+ 	<insert id="insertLevelRule" parameterType="WorkLevelRule" useGeneratedKeys="true" keyProperty="ruleId">
+ 		insert into work_level_rule(
+ 			<if test="ruleId != null and ruleId != 0">rule_id,</if>
+ 			<if test="level != null">level,</if>
+ 			<if test="levelName != null and levelName != ''">level_name,</if>
+ 			<if test="minStage != null and minStage != ''">min_stage,</if>
+ 			<if test="maxStage != null and maxStage != ''">max_stage,</if>
+ 			<if test="description != null and description != ''">description,</if>
+ 			create_time
+ 		)values(
+ 			<if test="ruleId != null and ruleId != 0">#{ruleId},</if>
+ 			<if test="level != null">#{level},</if>
+ 			<if test="levelName != null and levelName != ''">#{levelName},</if>
+ 			<if test="minStage != null and minStage != ''">#{minStage},</if>
+ 			<if test="maxStage != null and maxStage != ''">#{maxStage},</if>
+ 			<if test="description != null and description != ''">#{description},</if>
+ 			sysdate()
+ 		)
+	</insert>
+
+</mapper>

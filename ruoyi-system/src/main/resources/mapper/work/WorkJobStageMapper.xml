@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.work.mapper.WorkJobStageMapper">
+
+	<resultMap type="WorkJobStage" id="WorkJobStageResult">
+		<id     property="jobStageId"      column="job_stage_id"      />
+		<result property="jobId"           column="job_id"            />
+		<result property="stageCode"       column="stage_code"        />
+		<result property="stageName"       column="stage_name"        />
+		<result property="stageOrder"      column="stage_order"       />
+		<result property="plannedWorkload" column="planned_workload"  />
+		<result property="actualWorkload"  column="actual_workload"   />
+		<result property="minLevel"        column="min_level"         />
+		<result property="requiredSkills"  column="required_skills"   />
+		<result property="assignedEmployees" column="assigned_employees" />
+		<result property="status"          column="status"            />
+		<result property="startDate"       column="start_date"        />
+		<result property="endDate"         column="end_date"          />
+		<result property="actualEndDate"   column="actual_end_date"   />
+		<result property="progress"        column="progress"          />
+		<result property="createBy"        column="create_by"         />
+		<result property="createTime"      column="create_time"       />
+		<result property="updateBy"        column="update_by"         />
+		<result property="updateTime"      column="update_time"       />
+		<result property="remark"          column="remark"            />
+	</resultMap>
+	
+	<sql id="selectJobStageVo">
+        select job_stage_id, job_id, stage_code, stage_name, stage_order, 
+               planned_workload, actual_workload, min_level, required_skills, 
+               assigned_employees, status, start_date, end_date, actual_end_date, 
+               progress, create_by, create_time, update_by, update_time, remark 
+		from work_job_stage
+    </sql>
+	
+	<select id="selectJobStageList" parameterType="WorkJobStage" resultMap="WorkJobStageResult">
+	    <include refid="selectJobStageVo"/>
+		<where>
+			<if test="delFlag == null or delFlag == '' or delFlag == '0'">
+				AND del_flag = '0'
+			</if>
+			<if test="jobId != null">
+				AND job_id = #{jobId}
+			</if>
+			<if test="stageCode != null and stageCode != ''">
+				AND stage_code = #{stageCode}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+		</where>
+		order by stage_order asc
+	</select>
+	
+	<select id="selectJobStagesByJobId" parameterType="Long" resultMap="WorkJobStageResult">
+		<include refid="selectJobStageVo"/>
+		where job_id = #{jobId} and del_flag = '0'
+		order by stage_order asc
+	</select>
+	
+	<select id="selectJobStageById" parameterType="Long" resultMap="WorkJobStageResult">
+		<include refid="selectJobStageVo"/>
+		where job_stage_id = #{jobStageId} and del_flag = '0'
+	</select>
+	
+	<select id="selectStagesToAssign" parameterType="String" resultMap="WorkJobStageResult">
+		<include refid="selectJobStageVo"/>
+		where status = #{param1} and del_flag = '0'
+		order by create_time asc
+	</select>
+	
+ 	<delete id="deleteJobStageByIds" parameterType="Long">
+ 		update work_job_stage set del_flag = '2' where job_stage_id in
+ 		<foreach collection="array" item="jobStageId" open="(" separator="," close=")">
+ 			#{jobStageId}
+        </foreach>
+ 	</delete>
+ 	
+ 	<delete id="deleteJobStageByJobId" parameterType="Long">
+ 		update work_job_stage set del_flag = '2' where job_id = #{jobId}
+ 	</delete>
+ 	
+ 	<update id="updateJobStage" parameterType="WorkJobStage">
+ 		update work_job_stage
+ 		<set>
+ 			<if test="jobId != null">job_id = #{jobId},</if>
+ 			<if test="stageCode != null and stageCode != ''">stage_code = #{stageCode},</if>
+ 			<if test="stageName != null and stageName != ''">stage_name = #{stageName},</if>
+ 			<if test="stageOrder != null">stage_order = #{stageOrder},</if>
+ 			<if test="plannedWorkload != null">planned_workload = #{plannedWorkload},</if>
+ 			<if test="actualWorkload != null">actual_workload = #{actualWorkload},</if>
+ 			<if test="minLevel != null">min_level = #{minLevel},</if>
+ 			<if test="requiredSkills != null">required_skills = #{requiredSkills},</if>
+ 			<if test="assignedEmployees != null">assigned_employees = #{assignedEmployees},</if>
+ 			<if test="status != null and status != ''">status = #{status},</if>
+ 			<if test="startDate != null">start_date = #{startDate},</if>
+ 			<if test="endDate != null">end_date = #{endDate},</if>
+ 			<if test="actualEndDate != null">actual_end_date = #{actualEndDate},</if>
+ 			<if test="progress != null">progress = #{progress},</if>
+ 			<if test="remark != null">remark = #{remark},</if>
+ 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate()
+ 		</set>
+ 		where job_stage_id = #{jobStageId}
+	</update>
+	
+	<update id="updateJobStageStatus">
+		update work_job_stage 
+		set status = #{param2}, update_time = sysdate()
+		<if test="param2 == '2'">
+			, actual_end_date = curdate()
+		</if>
+		where job_stage_id = #{param1}
+	</update>
+	
+	<update id="updateJobStageWorkload">
+		update work_job_stage 
+		set actual_workload = #{param2}, update_time = sysdate()
+		where job_stage_id = #{param1}
+	</update>
+ 	
+ 	<insert id="insertJobStage" parameterType="WorkJobStage" useGeneratedKeys="true" keyProperty="jobStageId">
+ 		insert into work_job_stage(
+ 			<if test="jobStageId != null and jobStageId != 0">job_stage_id,</if>
+ 			<if test="jobId != null">job_id,</if>
+ 			<if test="stageCode != null and stageCode != ''">stage_code,</if>
+ 			<if test="stageName != null and stageName != ''">stage_name,</if>
+ 			<if test="stageOrder != null">stage_order,</if>
+ 			<if test="plannedWorkload != null">planned_workload,</if>
+ 			<if test="minLevel != null">min_level,</if>
+ 			<if test="requiredSkills != null">required_skills,</if>
+ 			<if test="status != null and status != ''">status,</if>
+ 			<if test="startDate != null">start_date,</if>
+ 			<if test="endDate != null">end_date,</if>
+ 			<if test="remark != null and remark != ''">remark,</if>
+ 			<if test="createBy != null and createBy != ''">create_by,</if>
+ 			create_time
+ 		)values(
+ 			<if test="jobStageId != null and jobStageId != 0">#{jobStageId},</if>
+ 			<if test="jobId != null">#{jobId},</if>
+ 			<if test="stageCode != null and stageCode != ''">#{stageCode},</if>
+ 			<if test="stageName != null and stageName != ''">#{stageName},</if>
+ 			<if test="stageOrder != null">#{stageOrder},</if>
+ 			<if test="plannedWorkload != null">#{plannedWorkload},</if>
+ 			<if test="minLevel != null">#{minLevel},</if>
+ 			<if test="requiredSkills != null">#{requiredSkills},</if>
+ 			<if test="status != null and status != ''">#{status},</if>
+ 			<if test="startDate != null">#{startDate},</if>
+ 			<if test="endDate != null">#{endDate},</if>
+ 			<if test="remark != null and remark != ''">#{remark},</if>
+ 			<if test="createBy != null and createBy != ''">#{createBy},</if>
+ 			sysdate()
+ 		)
+	</insert>
+	
+	<select id="sumAssignedWorkload" parameterType="Long" resultType="java.lang.Double">
+		select coalesce(sum(workload), 0) from work_assignment 
+		where job_stage_id = #{jobStageId} and del_flag = '0' and status != '3'
+	</select>
+
+</mapper>

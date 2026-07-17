@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('新增进度更新记录')" />
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-progressLog-add">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">所属作业：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="jobId" id="jobId" required>
+                        <option value="">---请选择作业---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业阶段：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="stageId" id="stageId">
+                        <option value="">---可选---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">进度类型：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="progressType" required>
+                        <option value="">---请选择类型---</option>
+                        <option value="0">阶段开始</option>
+                        <option value="1">进度更新</option>
+                        <option value="2">阶段完成</option>
+                        <option value="3">风险预警</option>
+                        <option value="4">问题报告</option>
+                        <option value="5">其他</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">进度百分比：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="progressPercent" id="progressPercent" min="0" max="100" value="0">
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 范围：0-100%</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">进度描述：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="progressDesc" id="progressDesc" rows="4" required placeholder="请详细描述当前进度情况"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">附件：</label>
+                <div class="col-sm-8">
+                    <input type="file" name="attachment" class="form-control">
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 可上传相关文档或截图</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="2"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/progressLog";
+
+        $(function() {
+            loadJobs();
+            
+            // 作业选择变化时加载阶段
+            $("#jobId").change(function() {
+                loadStages($(this).val());
+            });
+        });
+
+        function loadJobs() {
+            $.ajax({
+                url: ctx + "system/work/job/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择作业---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.jobId + '">' + item.jobNo + ' - ' + item.jobName + '</option>';
+                        });
+                        $("#jobId").html(options);
+                    }
+                }
+            });
+        }
+
+        function loadStages(jobId) {
+            $.ajax({
+                url: ctx + "system/work/jobStage/listByJob/" + jobId,
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择阶段---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.stageId + '">' + item.stageName + '</option>';
+                        });
+                        $("#stageId").html(options);
+                    }
+                }
+            });
+        }
+
+        $("#form-progressLog-add").validate({
+            rules: {
+                jobId: {
+                    required: true
+                },
+                progressType: {
+                    required: true
+                },
+                progressPercent: {
+                    number: true,
+                    min: 0,
+                    max: 100
+                },
+                progressDesc: {
+                    required: true,
+                    minlength: 10
+                }
+            },
+            messages: {
+                jobId: {
+                    required: "请选择所属作业"
+                },
+                progressType: {
+                    required: "请选择进度类型"
+                },
+                progressDesc: {
+                    required: "请输入进度描述",
+                    minlength: "进度描述至少 10 个字符"
+                }
+            },
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/add", $("#form-progressLog-add").serializeArray());
+            }
+        }
+    </script>
+</body>
+</html>

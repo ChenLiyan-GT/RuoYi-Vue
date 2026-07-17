@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('修改作业阶段')" />
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-jobStage-edit">
+            <input type="hidden" name="stageId" th:value="${jobStage.stageId}">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">所属作业：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="jobId" id="jobId" required>
+                        <option value="">---请选择作业---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">阶段编号：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="stageNo" id="stageNo" required>
+                        <option value="1" th:selected="${jobStage.stageNo} == 1">需求分析</option>
+                        <option value="2" th:selected="${jobStage.stageNo} == 2">基本设计</option>
+                        <option value="3" th:selected="${jobStage.stageNo} == 3">内部设计</option>
+                        <option value="4" th:selected="${jobStage.stageNo} == 4">开发</option>
+                        <option value="5" th:selected="${jobStage.stageNo} == 5">单体测试</option>
+                        <option value="6" th:selected="${jobStage.stageNo} == 6">结合测试</option>
+                        <option value="7" th:selected="${jobStage.stageNo} == 7">综合测试</option>
+                        <option value="8" th:selected="${jobStage.stageNo} == 8">上线</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">阶段名称：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="stageName" id="stageName" th:value="${jobStage.stageName}" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">计划工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="planWorkload" th:value="${jobStage.planWorkload}" step="0.5" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">实际工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" th:value="${jobStage.actualWorkload}" readonly>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 系统自动统计</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">开始日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="startDate" id="startDate" th:value="${jobStage.startDate}" placeholder="选择开始日期">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">结束日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="endDate" id="endDate" th:value="${jobStage.endDate}" placeholder="选择结束日期">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">阶段状态：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="stageStatus">
+                        <option value="0" th:selected="${jobStage.stageStatus} == '0'">未开始</option>
+                        <option value="1" th:selected="${jobStage.stageStatus} == '1'">进行中</option>
+                        <option value="2" th:selected="${jobStage.stageStatus} == '2'">已完成</option>
+                        <option value="3" th:selected="${jobStage.stageStatus} == '3'">已跳过</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">完成率：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" th:value="${jobStage.completeRate} + '%'" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="3" th:text="${jobStage.remark}"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/jobStage";
+        
+        var stageNames = ['', '需求分析', '基本设计', '内部设计', '开发', '单体测试', '结合测试', '综合测试', '上线'];
+
+        $(function() {
+            loadJobs();
+            initDatePickers();
+            
+            // 阶段选择变化时自动填充名称
+            $("#stageNo").change(function() {
+                var val = $(this).val();
+                $("#stageName").val(stageNames[val] || '');
+            });
+        });
+
+        function loadJobs() {
+            $.ajax({
+                url: ctx + "system/work/job/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择作业---</option>';
+                        $.each(result.rows, function(i, item) {
+                            var selected = item.jobId == [[${jobStage.jobId}]] ? 'selected' : '';
+                            options += '<option value="' + item.jobId + '" ' + selected + '>' + item.jobNo + ' - ' + item.jobName + '</option>';
+                        });
+                        $("#jobId").html(options);
+                    }
+                }
+            });
+        }
+
+        function initDatePickers() {
+            $("#startDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+            $("#endDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+        }
+
+        $("#form-jobStage-edit").validate({
+            rules: {
+                jobId: {
+                    required: true
+                },
+                stageNo: {
+                    required: true,
+                    digits: true,
+                    min: 1,
+                    max: 8
+                },
+                planWorkload: {
+                    required: true,
+                    number: true,
+                    min: 0
+                }
+            },
+            messages: {
+                jobId: {
+                    required: "请选择所属作业"
+                },
+                stageNo: {
+                    required: "请选择阶段编号"
+                },
+                planWorkload: {
+                    required: "请输入计划工时"
+                }
+            },
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/edit", $("#form-jobStage-edit").serializeArray());
+            }
+        }
+    </script>
+</body>
+</html>

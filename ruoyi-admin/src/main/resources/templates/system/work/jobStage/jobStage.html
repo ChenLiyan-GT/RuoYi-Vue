@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('作业阶段列表')" />
+    <th:block th:include="include :: layoutGrid" />
+</head>
+<body class="gray-bg">
+    <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>作业编号：</label>
+                                <input type="text" name="jobNo"/>
+                            </li>
+                            <li>
+                                <label>作业名称：</label>
+                                <input type="text" name="jobName"/>
+                            </li>
+                            <li>
+                                <label>阶段状态：</label>
+                                <select name="stageStatus" class="form-control">
+                                    <option value="">---请选择---</option>
+                                    <option value="0">未开始</option>
+                                    <option value="1">进行中</option>
+                                    <option value="2">已完成</option>
+                                    <option value="3">已跳过</option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" shiro:hasPermission="system:work:jobStage:add">
+                <a class="btn btn-success" onclick="$.operate.add()">
+                    <i class="fa fa-plus"></i> 新增
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-info" onclick="batchStart()">
+                    <i class="fa fa-play"></i> 批量开始
+                </a>
+            </div>
+
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/jobStage";
+        var addFlag = [[${@permission.hasPermi('system:work:jobStage:add')}]];
+        var editFlag = [[${@permission.hasPermi('system:work:jobStage:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('system:work:jobStage:remove')}]];
+
+        var stageNames = ['', '需求分析', '基本设计', '内部设计', '开发', '单体测试', '结合测试', '综合测试', '上线'];
+
+        $.table.init({
+            url: prefix + "/list",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            modalName: "作业阶段",
+            columns: [{
+                checkbox: true
+            }, {
+                field: 'stageId',
+                title: '阶段 ID',
+                visible: false
+            }, {
+                field: 'jobNo',
+                title: '作业编号'
+            }, {
+                field: 'jobName',
+                title: '作业名称'
+            }, {
+                field: 'stageNo',
+                title: '阶段编号',
+                formatter: function(value, row, index) {
+                    return stageNames[value] || value;
+                }
+            }, {
+                field: 'stageName',
+                title: '阶段名称'
+            }, {
+                field: 'planWorkload',
+                title: '计划工时',
+                sortable: true
+            }, {
+                field: 'actualWorkload',
+                title: '实际工时',
+                formatter: function(value, row, index) {
+                    return (value || 0) + ' / ' + (row.planWorkload || 0);
+                }
+            }, {
+                field: 'startDate',
+                title: '开始日期',
+                sortable: true
+            }, {
+                field: 'endDate',
+                title: '结束日期',
+                sortable: true
+            }, {
+                field: 'stageStatus',
+                title: '状态',
+                formatter: function(value, row, index) {
+                    if (value === '0') return '<span class="badge badge-secondary">未开始</span>';
+                    if (value === '1') return '<span class="badge badge-primary">进行中</span>';
+                    if (value === '2') return '<span class="badge badge-success">已完成</span>';
+                    if (value === '3') return '<span class="badge badge-info">已跳过</span>';
+                    return value;
+                }
+            }, {
+                field: 'completeRate',
+                title: '完成率',
+                formatter: function(value, row, index) {
+                    var percent = value || 0;
+                    return '<div class="progress progress-sm"><div class="progress-bar progress-bar-striped" style="width:' + percent + '%"></div></div>' + percent + '%';
+                }
+            }, {
+                title: '操作',
+                align: 'center',
+                formatter: function(value, row, index) {
+                    var actions = [];
+                    if (row.stageStatus === '0') {
+                        actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="startStage(\'' + row.stageId + '\')"><i class="fa fa-play"></i>开始</a> ');
+                    }
+                    if (row.stageStatus === '1') {
+                        actions.push('<a class="btn btn-info btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="completeStage(\'' + row.stageId + '\')"><i class="fa fa-check"></i>完成</a> ');
+                    }
+                    actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.stageId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                    actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.stageId + '\')"><i class="fa fa-remove"></i>删除</a> ');
+                    return actions.join('');
+                }
+            }]
+        });
+
+        function startStage(stageId) {
+            $.modal.confirm("确认开始该阶段吗？", function() {
+                $.operate.post(prefix + "/start/" + stageId);
+            });
+        }
+
+        function completeStage(stageId) {
+            $.modal.confirm("确认完成该阶段吗？", function() {
+                $.operate.post(prefix + "/complete/" + stageId);
+            });
+        }
+
+        function batchStart() {
+            var rows = $.table.selectColumns("stageId");
+            if (rows.length == 0) {
+                $.modal.alertWarning("请选择记录");
+                return;
+            }
+            $.modal.confirm("确认开始选中的 " + rows.length + " 个阶段吗？", function() {
+                $.operate.post(prefix + "/batchStart", { stageIds: rows.join(',') });
+            });
+        }
+    </script>
+</body>
+</html>

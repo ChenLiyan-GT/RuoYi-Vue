@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('修改作业分配')" />
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-assignment-edit">
+            <input type="hidden" name="assignId" th:value="${assignment.assignId}">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业编号：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" th:value="${assignment.jobNo}" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业阶段：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" th:value="${assignment.stageName}" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">分配员工：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="employeeId" id="employeeId" required>
+                        <option value="">---请选择员工---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">计划工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="planWorkload" th:value="${assignment.planWorkload}" step="0.5" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">实际工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" th:value="${assignment.actualWorkload}" readonly>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 系统自动统计</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">分配日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="assignDate" id="assignDate" th:value="${assignment.assignDate}" placeholder="选择分配日期" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">要求完成日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="requireDate" id="requireDate" th:value="${assignment.requireDate}" placeholder="选择要求完成日期">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">完成日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="completeDate" id="completeDate" th:value="${assignment.completeDate}" placeholder="选择完成日期">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">分配状态：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="assignStatus">
+                        <option value="0" th:selected="${assignment.assignStatus} == '0'">待确认</option>
+                        <option value="1" th:selected="${assignment.assignStatus} == '1'">已接受</option>
+                        <option value="2" th:selected="${assignment.assignStatus} == '2'">进行中</option>
+                        <option value="3" th:selected="${assignment.assignStatus} == '3'">已完成</option>
+                        <option value="4" th:selected="${assignment.assignStatus} == '4'">已拒绝</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">优先级：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="priority">
+                        <option value="0" th:selected="${assignment.priority} == '0'">低</option>
+                        <option value="1" th:selected="${assignment.priority} == '1'">中</option>
+                        <option value="2" th:selected="${assignment.priority} == '2'">高</option>
+                        <option value="3" th:selected="${assignment.priority} == '3'">紧急</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="3" th:text="${assignment.remark}"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/assignment";
+
+        $(function() {
+            loadEmployees();
+            initDatePickers();
+        });
+
+        function loadEmployees() {
+            $.ajax({
+                url: ctx + "system/work/employee/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择员工---</option>';
+                        $.each(result.rows, function(i, item) {
+                            var selected = item.employeeId == [[${assignment.employeeId}]] ? 'selected' : '';
+                            options += '<option value="' + item.employeeId + '" ' + selected + '>' + item.employeeName + ' (P' + item.level + ')</option>';
+                        });
+                        $("#employeeId").html(options);
+                    }
+                }
+            });
+        }
+
+        function initDatePickers() {
+            $("#assignDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+            $("#requireDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+            $("#completeDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+        }
+
+        $("#form-assignment-edit").validate({
+            rules: {
+                employeeId: {
+                    required: true
+                },
+                planWorkload: {
+                    required: true,
+                    number: true,
+                    min: 0
+                },
+                assignDate: {
+                    required: true
+                }
+            },
+            messages: {
+                employeeId: {
+                    required: "请选择分配员工"
+                },
+                planWorkload: {
+                    required: "请输入计划工时"
+                },
+                assignDate: {
+                    required: "请选择分配日期"
+                }
+            },
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/edit", $("#form-assignment-edit").serializeArray());
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('新增作业')" />
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-job-add">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业编号：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="jobNo" id="jobNo" readonly>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 系统自动生成</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业名称：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="jobName" id="jobName" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">所属部门：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="deptId" id="deptId" required>
+                        <option value="">---请选择---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业模板：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="templateId" id="templateId">
+                        <option value="">---请选择模板---</option>
+                    </select>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 选择模板将自动创建作业阶段</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">总工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="totalWorkload" id="totalWorkload" step="0.5" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">开始日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="startDate" id="startDate" placeholder="选择开始日期" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">预计完成日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="endDate" id="endDate" placeholder="选择预计完成日期" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">优先级：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="priority">
+                        <option value="0">低</option>
+                        <option value="1" selected>中</option>
+                        <option value="2">高</option>
+                        <option value="3">紧急</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="3"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/job";
+
+        $(function() {
+            loadDepts();
+            loadTemplates();
+            generateJobNo();
+            initDatePickers();
+            
+            // 选择模板后自动填充工时
+            $("#templateId").change(function() {
+                var templateId = $(this).val();
+                if (templateId) {
+                    loadTemplateDetail(templateId);
+                }
+            });
+        });
+
+        function loadDepts() {
+            $.ajax({
+                url: ctx + "system/dept/list",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.deptId + '">' + item.deptName + '</option>';
+                        });
+                        $("#deptId").html(options);
+                    }
+                }
+            });
+        }
+
+        function loadTemplates() {
+            $.ajax({
+                url: prefix + "/listTemplates",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择模板---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.templateId + '">' + item.templateName + '</option>';
+                        });
+                        $("#templateId").html(options);
+                    }
+                }
+            });
+        }
+
+        function generateJobNo() {
+            $.ajax({
+                url: prefix + "/generateJobNo",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        $("#jobNo").val(result.data);
+                    }
+                }
+            });
+        }
+
+        function loadTemplateDetail(templateId) {
+            $.ajax({
+                url: prefix + "/detail/" + templateId,
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        // 可根据模板信息自动填充
+                    }
+                }
+            });
+        }
+
+        function initDatePickers() {
+            $("#startDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+            $("#endDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+        }
+
+        $("#form-job-add").validate({
+            rules: {
+                jobName: {
+                    required: true
+                },
+                deptId: {
+                    required: true
+                },
+                totalWorkload: {
+                    required: true,
+                    number: true,
+                    min: 0
+                },
+                startDate: {
+                    required: true
+                },
+                endDate: {
+                    required: true
+                }
+            },
+            messages: {
+                jobName: {
+                    required: "请输入作业名称"
+                },
+                deptId: {
+                    required: "请选择所属部门"
+                },
+                totalWorkload: {
+                    required: "请输入总工时"
+                },
+                startDate: {
+                    required: "请选择开始日期"
+                },
+                endDate: {
+                    required: "请选择预计完成日期"
+                }
+            },
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/add", $("#form-job-add").serializeArray());
+            }
+        }
+    </script>
+</body>
+</html>

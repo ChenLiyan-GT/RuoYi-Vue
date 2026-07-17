@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.work.mapper.WorkProgressLogMapper">
+
+	<resultMap type="WorkProgressLog" id="WorkProgressLogResult">
+		<id     property="logId"         column="log_id"          />
+		<result property="jobStageId"    column="job_stage_id"    />
+		<result property="employeeId"    column="employee_id"     />
+		<result property="progress"      column="progress"        />
+		<result property="prevProgress"  column="prev_progress"   />
+		<result property="workload"      column="workload"        />
+		<result property="content"       column="content"         />
+		<result property="remark"        column="remark"          />
+		<result property="createBy"      column="create_by"       />
+		<result property="createTime"    column="create_time"     />
+		<result property="updateBy"      column="update_by"       />
+		<result property="updateTime"    column="update_time"     />
+	</resultMap>
+	
+	<sql id="selectProgressLogVo">
+        select log_id, job_stage_id, employee_id, progress, prev_progress, 
+               workload, content, remark, create_by, create_time, update_by, update_time 
+		from work_progress_log
+    </sql>
+	
+	<select id="selectProgressLogList" parameterType="WorkProgressLog" resultMap="WorkProgressLogResult">
+	    <include refid="selectProgressLogVo"/>
+		<where>
+			<if test="delFlag == null or delFlag == '' or delFlag == '0'">
+				AND del_flag = '0'
+			</if>
+			<if test="jobStageId != null">
+				AND job_stage_id = #{jobStageId}
+			</if>
+			<if test="employeeId != null">
+				AND employee_id = #{employeeId}
+			</if>
+		</where>
+		order by create_time desc
+	</select>
+	
+	<select id="selectProgressLogsByJobStageId" parameterType="Long" resultMap="WorkProgressLogResult">
+		<include refid="selectProgressLogVo"/>
+		where job_stage_id = #{jobStageId} and del_flag = '0'
+		order by create_time desc
+	</select>
+	
+	<select id="selectProgressLogsByEmployeeId" parameterType="Long" resultMap="WorkProgressLogResult">
+		<include refid="selectProgressLogVo"/>
+		where employee_id = #{employeeId} and del_flag = '0'
+		order by create_time desc
+	</select>
+	
+	<select id="selectProgressLogById" parameterType="Long" resultMap="WorkProgressLogResult">
+		<include refid="selectProgressLogVo"/>
+		where log_id = #{logId} and del_flag = '0'
+	</select>
+	
+	<select id="selectLatestProgress" parameterType="Long" resultMap="WorkProgressLogResult">
+		<include refid="selectProgressLogVo"/>
+		where job_stage_id = #{jobStageId} and del_flag = '0'
+		order by create_time desc limit 1
+	</select>
+	
+ 	<delete id="deleteProgressLogByIds" parameterType="Long">
+ 		update work_progress_log set del_flag = '2' where log_id in
+ 		<foreach collection="array" item="logId" open="(" separator="," close=")">
+ 			#{logId}
+        </foreach>
+ 	</delete>
+ 	
+ 	<update id="updateProgressLog" parameterType="WorkProgressLog">
+ 		update work_progress_log
+ 		<set>
+ 			<if test="jobStageId != null">job_stage_id = #{jobStageId},</if>
+ 			<if test="employeeId != null">employee_id = #{employeeId},</if>
+ 			<if test="progress != null">progress = #{progress},</if>
+ 			<if test="prevProgress != null">prev_progress = #{prevProgress},</if>
+ 			<if test="workload != null">workload = #{workload},</if>
+ 			<if test="content != null">content = #{content},</if>
+ 			<if test="remark != null">remark = #{remark},</if>
+ 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate()
+ 		</set>
+ 		where log_id = #{logId}
+	</update>
+ 	
+ 	<insert id="insertProgressLog" parameterType="WorkProgressLog" useGeneratedKeys="true" keyProperty="logId">
+ 		insert into work_progress_log(
+ 			<if test="logId != null and logId != 0">log_id,</if>
+ 			<if test="jobStageId != null">job_stage_id,</if>
+ 			<if test="employeeId != null">employee_id,</if>
+ 			<if test="progress != null">progress,</if>
+ 			<if test="prevProgress != null">prev_progress,</if>
+ 			<if test="workload != null">workload,</if>
+ 			<if test="content != null">content,</if>
+ 			<if test="remark != null and remark != ''">remark,</if>
+ 			<if test="createBy != null and createBy != ''">create_by,</if>
+ 			create_time
+ 		)values(
+ 			<if test="logId != null and logId != 0">#{logId},</if>
+ 			<if test="jobStageId != null">#{jobStageId},</if>
+ 			<if test="employeeId != null">#{employeeId},</if>
+ 			<if test="progress != null">#{progress},</if>
+ 			<if test="prevProgress != null">#{prevProgress},</if>
+ 			<if test="workload != null">#{workload},</if>
+ 			<if test="content != null">#{content},</if>
+ 			<if test="remark != null and remark != ''">#{remark},</if>
+ 			<if test="createBy != null and createBy != ''">#{createBy},</if>
+ 			sysdate()
+ 		)
+	</insert>
+
+</mapper>

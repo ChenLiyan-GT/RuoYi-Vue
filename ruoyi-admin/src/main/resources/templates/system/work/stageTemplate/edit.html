@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('修改作业阶段模板')" />
+    <th:block th:include="include :: select2-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-stageTemplate-edit">
+            <input type="hidden" name="templateId" th:value="${stageTemplate.templateId}">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">模板名称：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="templateName" id="templateName" th:value="${stageTemplate.templateName}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">适用部门：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="deptId" id="deptId" required>
+                        <option value="">---请选择---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">阶段配置：</label>
+                <div class="col-sm-8">
+                    <div id="stageConfigContainer" class="form-control" style="height:auto;min-height:200px;">
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle"></i> 请勾选需要启用的阶段，并设置各阶段工时占比（总和应为 100%）
+                        </div>
+                        <div class="row" id="stageList">
+                            <!-- 阶段列表将由 JS 动态生成 -->
+                        </div>
+                        <div class="row" style="margin-top:15px;">
+                            <div class="col-sm-12">
+                                <label class="control-label">工时占比总和：<span id="totalRatio" style="font-weight:bold;color:#1ab394;">0</span>%</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">排序：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="sort" th:value="${stageTemplate.sort}" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">状态：</label>
+                <div class="col-sm-8">
+                    <label class="toggle-switch switch-solid">
+                        <input type="checkbox" id="status" name="status" th:checked="${stageTemplate.status} == '0'">
+                        <span></span>
+                    </label>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 勾选为正常，取消为停用</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="3" th:text="${stageTemplate.remark}"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/stageTemplate";
+        
+        var stageNames = ['需求分析', '基本设计', '内部设计', '开发', '单体测试', '结合测试', '综合测试', '上线'];
+        var defaultRatios = [5, 10, 10, 40, 15, 10, 5, 5];
+        var currentStageConfig = [[${stageTemplate.stageConfig}]];
+
+        $(function() {
+            loadDepts();
+            renderStageConfig();
+        });
+
+        function loadDepts() {
+            $.ajax({
+                url: ctx + "system/dept/list",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择---</option>';
+                        $.each(result.rows, function(i, item) {
+                            var selected = item.deptId == [[${stageTemplate.deptId}]] ? 'selected' : '';
+                            options += '<option value="' + item.deptId + '" ' + selected + '>' + item.deptName + '</option>';
+                        });
+                        $("#deptId").html(options);
+                    }
+                }
+            });
+        }
+
+        function renderStageConfig() {
+            // 解析现有配置
+            var stages = [];
+            if (currentStageConfig) {
+                try {
+                    stages = JSON.parse(currentStageConfig);
+                } catch(e) {
+                    console.error('解析阶段配置失败', e);
+                }
+            }
+            
+            var html = '';
+            for (var i = 0; i < stageNames.length; i++) {
+                var stageNo = i + 1;
+                var isChecked = false;
+                var ratio = defaultRatios[i];
+                
+                // 查找现有配置
+                for (var j = 0; j < stages.length; j++) {
+                    if (stages[j].stageNo == stageNo) {
+                        isChecked = true;
+                        ratio = stages[j].ratio || defaultRatios[i];
+                        break;
+                    }
+                }
+                
+                html += '<div class="col-sm-6" style="margin-bottom:10px;">';
+                html += '<div class="input-group">';
+                html += '<span class="input-group-addon" style="width:120px;">';
+                html += '<input type="checkbox" name="stageEnabled" value="' + stageNo + '" ' + (isChecked ? 'checked' : '') + '> ' + stageNames[i];
+                html += '</span>';
+                html += '<input type="number" class="form-control ratio-input" name="stageRatio_' + stageNo + '" value="' + ratio + '" min="0" max="100" data-index="' + i + '" ' + (isChecked ? '' : 'disabled') + '>';
+                html += '<span class="input-group-addon">%</span>';
+                html += '</div>';
+                html += '</div>';
+            }
+            $('#stageList').html(html);
+            
+            // 绑定占比变化事件
+            $('.ratio-input').on('change', function() {
+                calculateTotalRatio();
+            });
+            
+            // 绑定勾选变化事件
+            $('input[name="stageEnabled"]').on('change', function() {
+                var index = $(this).val() - 1;
+                var ratioInput = $('input[data-index="' + index + '"]');
+                if (!$(this).is(':checked')) {
+                    ratioInput.val(0).prop('disabled', true);
+                } else {
+                    ratioInput.val(defaultRatios[index]).prop('disabled', false);
+                }
+                calculateTotalRatio();
+            });
+            
+            calculateTotalRatio();
+        }
+
+        function calculateTotalRatio() {
+            var total = 0;
+            $('.ratio-input').each(function() {
+                if (!$(this).prop('disabled')) {
+                    total += parseInt($(this).val()) || 0;
+                }
+            });
+            $('#totalRatio').text(total);
+            if (total !== 100) {
+                $('#totalRatio').css('color', '#ed5565');
+            } else {
+                $('#totalRatio').css('color', '#1ab394');
+            }
+        }
+
+        $("#form-stageTemplate-edit").validate({
+            rules: {
+                templateName: {
+                    required: true
+                },
+                deptId: {
+                    required: true
+                },
+                sort: {
+                    digits: true,
+                    min: 0
+                }
+            },
+            messages: {
+                templateName: {
+                    required: "请输入模板名称"
+                },
+                deptId: {
+                    required: "请选择适用部门"
+                }
+            },
+            focusCleanup: true,
+            submitHandler: function(form) {
+                // 验证工时占比总和
+                var total = parseInt($('#totalRatio').text());
+                if (total !== 100) {
+                    $.modal.alertWarning("工时占比总和必须为 100%，当前为 " + total + "%");
+                    return false;
+                }
+                
+                // 构建阶段配置 JSON
+                var stages = [];
+                for (var i = 0; i < stageNames.length; i++) {
+                    var checkbox = $('input[name="stageEnabled"][value="' + (i+1) + '"]');
+                    if (checkbox.is(':checked')) {
+                        var ratio = $('input[data-index="' + i + '"]').val();
+                        stages.push({
+                            stageNo: i + 1,
+                            stageName: stageNames[i],
+                            ratio: parseInt(ratio) || 0
+                        });
+                    }
+                }
+                
+                var formData = $("#form-stageTemplate-edit").serializeArray();
+                formData.push({name: "stageConfig", value: JSON.stringify(stages)});
+                formData.push({name: "status", value: $("#status").is(":checked") ? "0" : "1"});
+                
+                $.operate.save(prefix + "/edit", formData);
+            }
+        });
+    </script>
+</body>
+</html>

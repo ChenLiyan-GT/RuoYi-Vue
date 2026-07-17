@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('级别规则列表')" />
+    <th:block th:include="include :: layoutGrid" />
+</head>
+<body class="gray-bg">
+    <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>职能类型：</label>
+                                <select name="positionTypeId" class="form-control">
+                                    <option value="">---请选择---</option>
+                                </select>
+                            </li>
+                            <li>
+                                <label>职级：</label>
+                                <input type="text" name="level"/>
+                            </li>
+                            <li>
+                                <label>状态：</label>
+                                <select name="status" class="form-control">
+                                    <option value="">---请选择---</option>
+                                    <option value="0">正常</option>
+                                    <option value="1">停用</option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" shiro:hasPermission="system:work:levelRule:add">
+                <a class="btn btn-success" onclick="$.operate.add()">
+                    <i class="fa fa-plus"></i> 新增
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+            </div>
+
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/levelRule";
+        var addFlag = [[${@permission.hasPermi('system:work:levelRule:add')}]];
+        var editFlag = [[${@permission.hasPermi('system:work:levelRule:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('system:work:levelRule:remove')}]];
+
+        $(function() {
+            loadPositionTypes();
+        });
+
+        function loadPositionTypes() {
+            $.ajax({
+                url: ctx + "system/work/positionType/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.positionTypeId + '">' + item.positionTypeName + '</option>';
+                        });
+                        $("select[name='positionTypeId']").html(options);
+                    }
+                }
+            });
+        }
+
+        $.table.init({
+            url: prefix + "/list",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            modalName: "级别规则",
+            columns: [{
+                checkbox: true
+            }, {
+                field: 'ruleId',
+                title: '规则 ID',
+                visible: false
+            }, {
+                field: 'positionTypeName',
+                title: '职能类型'
+            }, {
+                field: 'level',
+                title: '职级',
+                sortable: true
+            }, {
+                field: 'minStage',
+                title: '可执行最小阶段',
+                formatter: function(value, row, index) {
+                    var stages = {1:'需求分析',2:'基本设计',3:'内部设计',4:'开发',5:'单体测试',6:'结合测试',7:'综合测试',8:'上线'};
+                    return stages[value] || value;
+                }
+            }, {
+                field: 'maxStage',
+                title: '可执行最大阶段',
+                formatter: function(value, row, index) {
+                    var stages = {1:'需求分析',2:'基本设计',3:'内部设计',4:'开发',5:'单体测试',6:'结合测试',7:'综合测试',8:'上线'};
+                    return stages[value] || value;
+                }
+            }, {
+                field: 'description',
+                title: '描述',
+                width: '25%'
+            }, {
+                field: 'status',
+                title: '状态',
+                formatter: function(value, row, index) {
+                    return $.table.selectDictLabel($.table.selectDictList('sys_normal_disable'), value);
+                }
+            }, {
+                title: '操作',
+                align: 'center',
+                formatter: function(value, row, index) {
+                    var actions = [];
+                    actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.ruleId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                    actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.ruleId + '\')"><i class="fa fa-remove"></i>删除</a> ');
+                    return actions.join('');
+                }
+            }]
+        });
+    </script>
+</body>
+</html>

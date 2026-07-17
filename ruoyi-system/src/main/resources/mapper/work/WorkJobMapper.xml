@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.work.mapper.WorkJobMapper">
+
+	<resultMap type="WorkJob" id="WorkJobResult">
+		<id     property="jobId"           column="job_id"          />
+		<result property="jobNo"           column="job_no"          />
+		<result property="jobName"         column="job_name"        />
+		<result property="deptId"          column="dept_id"         />
+		<result property="templateId"      column="template_id"     />
+		<result property="totalWorkload"   column="total_workload"  />
+		<result property="status"          column="status"          />
+		<result property="startDate"       column="start_date"      />
+		<result property="endDate"         column="end_date"        />
+		<result property="actualEndDate"   column="actual_end_date" />
+		<result property="progress"        column="progress"        />
+		<result property="createBy"        column="create_by"       />
+		<result property="createTime"      column="create_time"     />
+		<result property="updateBy"        column="update_by"       />
+		<result property="updateTime"      column="update_time"     />
+		<result property="remark"          column="remark"          />
+	</resultMap>
+	
+	<sql id="selectJobVo">
+        select job_id, job_no, job_name, dept_id, template_id, total_workload, 
+               status, start_date, end_date, actual_end_date, progress, 
+               create_by, create_time, update_by, update_time, remark 
+		from work_job
+    </sql>
+	
+	<select id="selectJobList" parameterType="WorkJob" resultMap="WorkJobResult">
+	    <include refid="selectJobVo"/>
+		<where>
+			<if test="delFlag == null or delFlag == '' or delFlag == '0'">
+				AND del_flag = '0'
+			</if>
+			<if test="jobNo != null and jobNo != ''">
+				AND job_no like concat('%', #{jobNo}, '%')
+			</if>
+			<if test="jobName != null and jobName != ''">
+				AND job_name like concat('%', #{jobName}, '%')
+			</if>
+			<if test="deptId != null">
+				AND dept_id = #{deptId}
+			</if>
+			<if test="templateId != null">
+				AND template_id = #{templateId}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<if test="startDate != null">
+				AND start_date >= #{startDate}
+			</if>
+			<if test="endDate != null">
+				AND end_date <= #{endDate}
+			</if>
+		</where>
+		order by create_time desc
+	</select>
+	
+	<select id="selectJobAll" resultMap="WorkJobResult">
+		<include refid="selectJobVo"/>
+		where del_flag = '0'
+		order by create_time desc
+	</select>
+	
+	<select id="selectJobById" parameterType="Long" resultMap="WorkJobResult">
+		<include refid="selectJobVo"/>
+		where job_id = #{jobId} and del_flag = '0'
+	</select>
+	
+	<select id="checkJobNoUnique" parameterType="String" resultMap="WorkJobResult">
+		<include refid="selectJobVo"/>
+		where job_no = #{jobNo} and del_flag = '0' limit 1
+	</select>
+	
+	<select id="selectJobsByDeptId" parameterType="Long" resultMap="WorkJobResult">
+		<include refid="selectJobVo"/>
+		where dept_id = #{deptId} and del_flag = '0'
+		order by create_time desc
+	</select>
+	
+	<select id="selectJobsByStatus" parameterType="String" resultMap="WorkJobResult">
+		<include refid="selectJobVo"/>
+		where status = #{status} and del_flag = '0'
+		order by create_time desc
+	</select>
+	
+ 	<delete id="deleteJobByIds" parameterType="Long">
+ 		update work_job set del_flag = '2' where job_id in
+ 		<foreach collection="array" item="jobId" open="(" separator="," close=")">
+ 			#{jobId}
+        </foreach>
+ 	</delete>
+ 	
+ 	<update id="updateJob" parameterType="WorkJob">
+ 		update work_job
+ 		<set>
+ 			<if test="jobNo != null and jobNo != ''">job_no = #{jobNo},</if>
+ 			<if test="jobName != null and jobName != ''">job_name = #{jobName},</if>
+ 			<if test="deptId != null">dept_id = #{deptId},</if>
+ 			<if test="templateId != null">template_id = #{templateId},</if>
+ 			<if test="totalWorkload != null">total_workload = #{totalWorkload},</if>
+ 			<if test="status != null and status != ''">status = #{status},</if>
+ 			<if test="startDate != null">start_date = #{startDate},</if>
+ 			<if test="endDate != null">end_date = #{endDate},</if>
+ 			<if test="actualEndDate != null">actual_end_date = #{actualEndDate},</if>
+ 			<if test="progress != null">progress = #{progress},</if>
+ 			<if test="remark != null">remark = #{remark},</if>
+ 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate()
+ 		</set>
+ 		where job_id = #{jobId}
+	</update>
+	
+	<update id="updateJobProgress">
+		update work_job 
+		set progress = #{param2}, update_time = sysdate()
+		where job_id = #{param1}
+	</update>
+	
+	<update id="updateJobStatus">
+		update work_job 
+		set status = #{param2}, update_time = sysdate()
+		<if test="param2 == '2'">
+			, actual_end_date = curdate()
+		</if>
+		where job_id = #{param1}
+	</update>
+ 	
+ 	<insert id="insertJob" parameterType="WorkJob" useGeneratedKeys="true" keyProperty="jobId">
+ 		insert into work_job(
+ 			<if test="jobId != null and jobId != 0">job_id,</if>
+ 			<if test="jobNo != null and jobNo != ''">job_no,</if>
+ 			<if test="jobName != null and jobName != ''">job_name,</if>
+ 			<if test="deptId != null">dept_id,</if>
+ 			<if test="templateId != null">template_id,</if>
+ 			<if test="totalWorkload != null">total_workload,</if>
+ 			<if test="status != null and status != ''">status,</if>
+ 			<if test="startDate != null">start_date,</if>
+ 			<if test="endDate != null">end_date,</if>
+ 			<if test="progress != null">progress,</if>
+ 			<if test="remark != null and remark != ''">remark,</if>
+ 			<if test="createBy != null and createBy != ''">create_by,</if>
+ 			create_time
+ 		)values(
+ 			<if test="jobId != null and jobId != 0">#{jobId},</if>
+ 			<if test="jobNo != null and jobNo != ''">#{jobNo},</if>
+ 			<if test="jobName != null and jobName != ''">#{jobName},</if>
+ 			<if test="deptId != null">#{deptId},</if>
+ 			<if test="templateId != null">#{templateId},</if>
+ 			<if test="totalWorkload != null">#{totalWorkload},</if>
+ 			<if test="status != null and status != ''">#{status},</if>
+ 			<if test="startDate != null">#{startDate},</if>
+ 			<if test="endDate != null">#{endDate},</if>
+ 			<if test="progress != null">#{progress},</if>
+ 			<if test="remark != null and remark != ''">#{remark},</if>
+ 			<if test="createBy != null and createBy != ''">#{createBy},</if>
+ 			sysdate()
+ 		)
+	</insert>
+	
+	<select id="countJobsByDeptAndStatus" resultType="int">
+		select count(1) from work_job 
+		where dept_id = #{param1} and status = #{param2} and del_flag = '0'
+	</select>
+
+</mapper>

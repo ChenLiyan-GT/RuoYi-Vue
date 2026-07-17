@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('修改员工')" />
+    <th:block th:include="include :: select2-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-employee-edit">
+            <input type="hidden" name="employeeId" th:value="${employee.employeeId}">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">工号：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="employeeNo" id="employeeNo" th:value="${employee.employeeNo}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">员工姓名：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="employeeName" id="employeeName" th:value="${employee.employeeName}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">所属部门：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="deptId" id="deptId">
+                        <option value="">---请选择---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">职能类型：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="positionTypeId" id="positionTypeId" required>
+                        <option value="">---请选择---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">职级：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="level" id="level" th:value="${employee.level}" min="1" max="10" required>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 范围：1-10（P1~P10）</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">当前工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="currentWorkload" th:value="${employee.currentWorkload}" readonly>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 系统自动计算，不可编辑</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">最大工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="maxWorkload" th:value="${employee.maxWorkload}" step="0.5">
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 月度标准工时（小时）</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">负载状态：</label>
+                <div class="col-sm-8">
+                    <span th:if="${employee.loadStatus} == '0'" class="badge badge-success">空闲</span>
+                    <span th:if="${employee.loadStatus} == '1'" class="badge badge-primary">工作中</span>
+                    <span th:if="${employee.loadStatus} == '2'" class="badge badge-danger">过载</span>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 系统根据工时自动计算</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">状态：</label>
+                <div class="col-sm-8">
+                    <label class="toggle-switch switch-solid">
+                        <input type="checkbox" id="status" name="status" th:checked="${employee.status} == '0'">
+                        <span></span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="3" th:text="${employee.remark}"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/employee";
+        var employeeId = [[${employee.employeeId}]];
+
+        $(function() {
+            loadDepts();
+            loadPositionTypes();
+        });
+
+        function loadDepts() {
+            $.ajax({
+                url: ctx + "system/dept/list",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择---</option>';
+                        $.each(result.rows, function(i, item) {
+                            var selected = item.deptId == [[${employee.deptId}]] ? 'selected' : '';
+                            options += '<option value="' + item.deptId + '" ' + selected + '>' + item.deptName + '</option>';
+                        });
+                        $("#deptId").html(options);
+                    }
+                }
+            });
+        }
+
+        function loadPositionTypes() {
+            $.ajax({
+                url: prefix + "/positionType/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择---</option>';
+                        $.each(result.rows, function(i, item) {
+                            var selected = item.positionTypeId == [[${employee.positionTypeId}]] ? 'selected' : '';
+                            options += '<option value="' + item.positionTypeId + '" ' + selected + '>' + item.positionTypeName + '</option>';
+                        });
+                        $("#positionTypeId").html(options);
+                    }
+                }
+            });
+        }
+
+        $("#form-employee-edit").validate({
+            rules: {
+                employeeNo: {
+                    required: true,
+                    remote: {
+                        url: prefix + "/checkEmployeeNoUnique",
+                        type: "post",
+                        dataType: "json",
+                        data: {
+                            employeeId: function() {
+                                return $("#form-employee-edit input[name='employeeId']").val();
+                            },
+                            employeeNo: function() {
+                                return $.common.trim($("#employeeNo").val());
+                            }
+                        }
+                    }
+                },
+                employeeName: {
+                    required: true
+                },
+                positionTypeId: {
+                    required: true
+                },
+                level: {
+                    required: true,
+                    digits: true,
+                    min: 1,
+                    max: 10
+                },
+                maxWorkload: {
+                    number: true,
+                    min: 0
+                }
+            },
+            messages: {
+                employeeNo: {
+                    required: "请输入工号",
+                    remote: "工号已存在"
+                },
+                employeeName: {
+                    required: "请输入员工姓名"
+                },
+                positionTypeId: {
+                    required: "请选择职能类型"
+                },
+                level: {
+                    required: "请输入职级",
+                    digits: "职级必须是整数",
+                    min: "职级最小为 1",
+                    max: "职级最大为 10"
+                }
+            },
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                var data = $("#form-employee-edit").serializeArray();
+                data.push({name: "status", value: $("#status").is(":checked") ? "0" : "1"});
+                $.operate.save(prefix + "/edit", data);
+            }
+        }
+    </script>
+</body>
+</html>

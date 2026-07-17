@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('新增作业阶段')" />
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-jobStage-add">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">所属作业：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="jobId" id="jobId" required>
+                        <option value="">---请选择作业---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">阶段编号：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="stageNo" id="stageNo" required>
+                        <option value="">---请选择阶段---</option>
+                        <option value="1">需求分析</option>
+                        <option value="2">基本设计</option>
+                        <option value="3">内部设计</option>
+                        <option value="4">开发</option>
+                        <option value="5">单体测试</option>
+                        <option value="6">结合测试</option>
+                        <option value="7">综合测试</option>
+                        <option value="8">上线</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">阶段名称：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="stageName" id="stageName" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">计划工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="planWorkload" id="planWorkload" step="0.5" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">开始日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="startDate" id="startDate" placeholder="选择开始日期">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">结束日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="endDate" id="endDate" placeholder="选择结束日期">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">前置阶段：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="preStageId" id="preStageId">
+                        <option value="">---无前置阶段---</option>
+                    </select>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 可选，设置后需前置阶段完成才能开始</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="3"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/jobStage";
+        
+        var stageNames = ['', '需求分析', '基本设计', '内部设计', '开发', '单体测试', '结合测试', '综合测试', '上线'];
+
+        $(function() {
+            loadJobs();
+            initDatePickers();
+            
+            // 阶段选择变化时自动填充名称
+            $("#stageNo").change(function() {
+                var val = $(this).val();
+                $("#stageName").val(stageNames[val] || '');
+            });
+            
+            // 作业选择变化时加载前置阶段
+            $("#jobId").change(function() {
+                loadPreStages($(this).val());
+            });
+        });
+
+        function loadJobs() {
+            $.ajax({
+                url: ctx + "system/work/job/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择作业---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.jobId + '">' + item.jobNo + ' - ' + item.jobName + '</option>';
+                        });
+                        $("#jobId").html(options);
+                    }
+                }
+            });
+        }
+
+        function loadPreStages(jobId) {
+            $.ajax({
+                url: prefix + "/listByJob/" + jobId,
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---无前置阶段---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.stageId + '">' + item.stageName + '</option>';
+                        });
+                        $("#preStageId").html(options);
+                    }
+                }
+            });
+        }
+
+        function initDatePickers() {
+            $("#startDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+            $("#endDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+        }
+
+        $("#form-jobStage-add").validate({
+            rules: {
+                jobId: {
+                    required: true
+                },
+                stageNo: {
+                    required: true,
+                    digits: true,
+                    min: 1,
+                    max: 8
+                },
+                planWorkload: {
+                    required: true,
+                    number: true,
+                    min: 0
+                }
+            },
+            messages: {
+                jobId: {
+                    required: "请选择所属作业"
+                },
+                stageNo: {
+                    required: "请选择阶段编号"
+                },
+                planWorkload: {
+                    required: "请输入计划工时"
+                }
+            },
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/add", $("#form-jobStage-add").serializeArray());
+            }
+        }
+    </script>
+</body>
+</html>

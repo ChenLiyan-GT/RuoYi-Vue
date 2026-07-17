@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('作业分配列表')" />
+    <th:block th:include="include :: layoutGrid" />
+</head>
+<body class="gray-bg">
+    <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>作业编号：</label>
+                                <input type="text" name="jobNo"/>
+                            </li>
+                            <li>
+                                <label>员工姓名：</label>
+                                <input type="text" name="employeeName"/>
+                            </li>
+                            <li>
+                                <label>分配状态：</label>
+                                <select name="assignStatus" class="form-control">
+                                    <option value="">---请选择---</option>
+                                    <option value="0">待确认</option>
+                                    <option value="1">已接受</option>
+                                    <option value="2">进行中</option>
+                                    <option value="3">已完成</option>
+                                    <option value="4">已拒绝</option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" shiro:hasPermission="system:work:assignment:add">
+                <a class="btn btn-success" onclick="$.operate.add()">
+                    <i class="fa fa-plus"></i> 新增
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-info" onclick="smartAssign()">
+                    <i class="fa fa-magic"></i> 智能分配
+                </a>
+                <a class="btn btn-warning" onclick="reassignWorkload()">
+                    <i class="fa fa-retweet"></i> 工作重分配
+                </a>
+            </div>
+
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 智能分配弹窗 -->
+    <div class="modal fade" id="smartAssignModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">智能分配作业</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>选择作业：</label>
+                        <select class="form-control" id="assignJobId">
+                            <option value="">---请选择作业---</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>选择阶段：</label>
+                        <select class="form-control" id="assignStageId">
+                            <option value="">---请先选择作业---</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"></i> 智能分配将根据员工负载、级别匹配、技能匹配进行推荐
+                    </div>
+                    <div id="assignResult" style="display:none;">
+                        <h6>推荐员工：</h6>
+                        <div id="recommendList"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="confirmAssign()">确认分配</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/assignment";
+        var addFlag = [[${@permission.hasPermi('system:work:assignment:add')}]];
+        var editFlag = [[${@permission.hasPermi('system:work:assignment:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('system:work:assignment:remove')}]];
+
+        var statusNames = {
+            '0': '<span class="badge badge-secondary">待确认</span>',
+            '1': '<span class="badge badge-info">已接受</span>',
+            '2': '<span class="badge badge-primary">进行中</span>',
+            '3': '<span class="badge badge-success">已完成</span>',
+            '4': '<span class="badge badge-danger">已拒绝</span>'
+        };
+
+        $.table.init({
+            url: prefix + "/list",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            modalName: "作业分配",
+            columns: [{
+                checkbox: true
+            }, {
+                field: 'assignId',
+                title: '分配 ID',
+                visible: false
+            }, {
+                field: 'jobNo',
+                title: '作业编号'
+            }, {
+                field: 'jobName',
+                title: '作业名称'
+            }, {
+                field: 'stageName',
+                title: '阶段名称'
+            }, {
+                field: 'employeeName',
+                title: '员工姓名'
+            }, {
+                field: 'employeeLevel',
+                title: '员工级别',
+                formatter: function(value, row, index) {
+                    return 'P' + value;
+                }
+            }, {
+                field: 'planWorkload',
+                title: '计划工时',
+                sortable: true
+            }, {
+                field: 'actualWorkload',
+                title: '实际工时'
+            }, {
+                field: 'assignStatus',
+                title: '状态',
+                formatter: function(value, row, index) {
+                    return statusNames[value] || value;
+                }
+            }, {
+                field: 'assignDate',
+                title: '分配日期',
+                sortable: true
+            }, {
+                field: 'completeDate',
+                title: '完成日期'
+            }, {
+                title: '操作',
+                align: 'center',
+                formatter: function(value, row, index) {
+                    var actions = [];
+                    if (row.assignStatus === '0') {
+                        actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="acceptAssign(\'' + row.assignId + '\')"><i class="fa fa-check"></i>接受</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="rejectAssign(\'' + row.assignId + '\')"><i class="fa fa-times"></i>拒绝</a> ');
+                    }
+                    if (row.assignStatus === '1') {
+                        actions.push('<a class="btn btn-primary btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="startWork(\'' + row.assignId + '\')"><i class="fa fa-play"></i>开始</a> ');
+                    }
+                    if (row.assignStatus === '2') {
+                        actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="completeWork(\'' + row.assignId + '\')"><i class="fa fa-check"></i>完成</a> ');
+                    }
+                    actions.push('<a class="btn btn-info btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.assignId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                    actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.assignId + '\')"><i class="fa fa-remove"></i>删除</a> ');
+                    return actions.join('');
+                }
+            }]
+        });
+
+        function smartAssign() {
+            loadJobs();
+            $('#smartAssignModal').modal('show');
+        }
+
+        function loadJobs() {
+            $.ajax({
+                url: ctx + "system/work/job/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择作业---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.jobId + '">' + item.jobNo + ' - ' + item.jobName + '</option>';
+                        });
+                        $("#assignJobId").html(options);
+                    }
+                }
+            });
+        }
+
+        $("#assignJobId").change(function() {
+            var jobId = $(this).val();
+            if (jobId) {
+                loadStages(jobId);
+            } else {
+                $("#assignStageId").html('<option value="">---请先选择作业---</option>');
+            }
+        });
+
+        function loadStages(jobId) {
+            $.ajax({
+                url: ctx + "system/work/jobStage/listByJob/" + jobId,
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择阶段---</option>';
+                        $.each(result.rows, function(i, item) {
+                            if (item.stageStatus === '0') {
+                                options += '<option value="' + item.stageId + '">' + item.stageName + '</option>';
+                            }
+                        });
+                        $("#assignStageId").html(options);
+                    }
+                }
+            });
+        }
+
+        $("#assignStageId").change(function() {
+            var stageId = $(this).val();
+            if (stageId) {
+                getRecommendEmployees(stageId);
+            }
+        });
+
+        function getRecommendEmployees(stageId) {
+            $.ajax({
+                url: prefix + "/recommend/" + stageId,
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var html = '<table class="table table-bordered">';
+                        html += '<thead><tr><th>员工</th><th>级别</th><th>负载</th><th>匹配度</th><th>操作</th></tr></thead><tbody>';
+                        $.each(result.rows, function(i, item) {
+                            html += '<tr>';
+                            html += '<td>' + item.employeeName + '</td>';
+                            html += '<td>P' + item.level + '</td>';
+                            html += '<td>' + item.loadPercent + '%</td>';
+                            html += '<td>' + item.matchScore + '</td>';
+                            html += '<td><button class="btn btn-xs btn-primary" onclick="selectEmployee(\'' + item.employeeId + '\')">选择</button></td>';
+                            html += '</tr>';
+                        });
+                        html += '</tbody></table>';
+                        $('#recommendList').html(html);
+                        $('#assignResult').show();
+                    }
+                }
+            });
+        }
+
+        var selectedEmployeeId = null;
+        function selectEmployee(employeeId) {
+            selectedEmployeeId = employeeId;
+            $('#recommendList tr td button').removeClass('btn-success').addClass('btn-primary');
+            event.target.classList.remove('btn-primary');
+            event.target.classList.add('btn-success');
+        }
+
+        function confirmAssign() {
+            var jobId = $("#assignJobId").val();
+            var stageId = $("#assignStageId").val();
+            if (!stageId || !selectedEmployeeId) {
+                $.modal.alertWarning("请选择阶段和员工");
+                return;
+            }
+            $.operate.post(prefix + "/confirm", {
+                stageId: stageId,
+                employeeId: selectedEmployeeId
+            });
+        }
+
+        function acceptAssign(assignId) {
+            $.operate.post(prefix + "/accept/" + assignId);
+        }
+
+        function rejectAssign(assignId) {
+            $.modal.prompt("请输入拒绝原因：", function(reason) {
+                $.operate.post(prefix + "/reject/" + assignId, { reason: reason });
+            });
+        }
+
+        function startWork(assignId) {
+            $.operate.post(prefix + "/start/" + assignId);
+        }
+
+        function completeWork(assignId) {
+            $.operate.post(prefix + "/complete/" + assignId);
+        }
+
+        function reassignWorkload() {
+            $.modal.confirm("确认重新分配工作负载吗？这将调整过载员工的工作分配。", function() {
+                $.operate.post(prefix + "/reassign");
+            });
+        }
+    </script>
+</body>
+</html>

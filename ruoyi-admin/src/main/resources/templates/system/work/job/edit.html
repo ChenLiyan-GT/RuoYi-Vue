@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('修改作业')" />
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-job-edit">
+            <input type="hidden" name="jobId" th:value="${job.jobId}">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业编号：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="jobNo" th:value="${job.jobNo}" readonly>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 不可修改</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业名称：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="jobName" th:value="${job.jobName}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">所属部门：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="deptId" id="deptId" required>
+                        <option value="">---请选择---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">总工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="totalWorkload" th:value="${job.totalWorkload}" step="0.5" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">已用工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" th:value="${job.actualWorkload}" readonly>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 系统自动统计</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">进度：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" th:value="${job.progress} + '%'" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">开始日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="startDate" id="startDate" th:value="${job.startDate}" placeholder="选择开始日期" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">预计完成日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="endDate" id="endDate" th:value="${job.endDate}" placeholder="选择预计完成日期" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业状态：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="jobStatus">
+                        <option value="0" th:selected="${job.jobStatus} == '0'">未开始</option>
+                        <option value="1" th:selected="${job.jobStatus} == '1'">进行中</option>
+                        <option value="2" th:selected="${job.jobStatus} == '2'">已完成</option>
+                        <option value="3" th:selected="${job.jobStatus} == '3'">已暂停</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">优先级：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="priority">
+                        <option value="0" th:selected="${job.priority} == '0'">低</option>
+                        <option value="1" th:selected="${job.priority} == '1'">中</option>
+                        <option value="2" th:selected="${job.priority} == '2'">高</option>
+                        <option value="3" th:selected="${job.priority} == '3'">紧急</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="3" th:text="${job.remark}"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/job";
+
+        $(function() {
+            loadDepts();
+            initDatePickers();
+        });
+
+        function loadDepts() {
+            $.ajax({
+                url: ctx + "system/dept/list",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择---</option>';
+                        $.each(result.rows, function(i, item) {
+                            var selected = item.deptId == [[${job.deptId}]] ? 'selected' : '';
+                            options += '<option value="' + item.deptId + '" ' + selected + '>' + item.deptName + '</option>';
+                        });
+                        $("#deptId").html(options);
+                    }
+                }
+            });
+        }
+
+        function initDatePickers() {
+            $("#startDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+            $("#endDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+        }
+
+        $("#form-job-edit").validate({
+            rules: {
+                jobName: {
+                    required: true
+                },
+                deptId: {
+                    required: true
+                },
+                totalWorkload: {
+                    required: true,
+                    number: true,
+                    min: 0
+                },
+                startDate: {
+                    required: true
+                },
+                endDate: {
+                    required: true
+                }
+            },
+            messages: {
+                jobName: {
+                    required: "请输入作业名称"
+                },
+                deptId: {
+                    required: "请选择所属部门"
+                },
+                totalWorkload: {
+                    required: "请输入总工时"
+                },
+                startDate: {
+                    required: "请选择开始日期"
+                },
+                endDate: {
+                    required: "请选择预计完成日期"
+                }
+            },
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/edit", $("#form-job-edit").serializeArray());
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('新增作业分配')" />
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-assignment-add">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">所属作业：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="jobId" id="jobId" required>
+                        <option value="">---请选择作业---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业阶段：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="stageId" id="stageId" required>
+                        <option value="">---请先选择作业---</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">分配员工：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="employeeId" id="employeeId" required>
+                        <option value="">---请选择员工---</option>
+                    </select>
+                    <span class="help-block m-b-none"><i class="fa fa-info-circle"></i> 建议根据员工级别和负载选择</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">计划工时：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="number" name="planWorkload" id="planWorkload" step="0.5" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">分配日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="assignDate" id="assignDate" placeholder="选择分配日期" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">要求完成日期：</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" name="requireDate" id="requireDate" placeholder="选择要求完成日期">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">优先级：</label>
+                <div class="col-sm-8">
+                    <select class="form-control" name="priority">
+                        <option value="0">低</option>
+                        <option value="1" selected>中</option>
+                        <option value="2">高</option>
+                        <option value="3">紧急</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea class="form-control" name="remark" id="remark" rows="3"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/assignment";
+
+        $(function() {
+            loadJobs();
+            loadEmployees();
+            initDatePickers();
+            
+            // 作业选择变化时加载阶段
+            $("#jobId").change(function() {
+                loadStages($(this).val());
+            });
+        });
+
+        function loadJobs() {
+            $.ajax({
+                url: ctx + "system/work/job/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择作业---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.jobId + '">' + item.jobNo + ' - ' + item.jobName + '</option>';
+                        });
+                        $("#jobId").html(options);
+                    }
+                }
+            });
+        }
+
+        function loadStages(jobId) {
+            $.ajax({
+                url: ctx + "system/work/jobStage/listByJob/" + jobId,
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择阶段---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.stageId + '">' + item.stageName + '</option>';
+                        });
+                        $("#stageId").html(options);
+                    }
+                }
+            });
+        }
+
+        function loadEmployees() {
+            $.ajax({
+                url: ctx + "system/work/employee/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择员工---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.employeeId + '">' + item.employeeName + ' (P' + item.level + ')</option>';
+                        });
+                        $("#employeeId").html(options);
+                    }
+                }
+            });
+        }
+
+        function initDatePickers() {
+            $("#assignDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true,
+                startDate: new Date()
+            });
+            $("#requireDate").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+        }
+
+        $("#form-assignment-add").validate({
+            rules: {
+                jobId: {
+                    required: true
+                },
+                stageId: {
+                    required: true
+                },
+                employeeId: {
+                    required: true
+                },
+                planWorkload: {
+                    required: true,
+                    number: true,
+                    min: 0
+                },
+                assignDate: {
+                    required: true
+                }
+            },
+            messages: {
+                jobId: {
+                    required: "请选择所属作业"
+                },
+                stageId: {
+                    required: "请选择作业阶段"
+                },
+                employeeId: {
+                    required: "请选择分配员工"
+                },
+                planWorkload: {
+                    required: "请输入计划工时"
+                },
+                assignDate: {
+                    required: "请选择分配日期"
+                }
+            },
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/add", $("#form-assignment-add").serializeArray());
+            }
+        }
+    </script>
+</body>
+</html>

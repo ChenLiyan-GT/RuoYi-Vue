@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.work.mapper.WorkTimesheetMapper">
+
+	<resultMap type="WorkTimesheet" id="WorkTimesheetResult">
+		<id     property="timesheetId"   column="timesheet_id"    />
+		<result property="assignId"      column="assign_id"       />
+		<result property="workDate"      column="work_date"       />
+		<result property="workload"      column="workload"        />
+		<result property="content"       column="content"         />
+		<result property="status"        column="status"          />
+		<result property="submitBy"      column="submit_by"       />
+		<result property="submitTime"    column="submit_time"     />
+		<result property="auditBy"       column="audit_by"        />
+		<result property="auditTime"     column="audit_time"      />
+		<result property="auditComment"  column="audit_comment"   />
+		<result property="createBy"      column="create_by"       />
+		<result property="createTime"    column="create_time"     />
+		<result property="updateBy"      column="update_by"       />
+		<result property="updateTime"    column="update_time"     />
+		<result property="remark"        column="remark"          />
+	</resultMap>
+	
+	<sql id="selectTimesheetVo">
+        select timesheet_id, assign_id, work_date, workload, content, status, 
+               submit_by, submit_time, audit_by, audit_time, audit_comment, 
+               create_by, create_time, update_by, update_time, remark 
+		from work_timesheet
+    </sql>
+	
+	<select id="selectTimesheetList" parameterType="WorkTimesheet" resultMap="WorkTimesheetResult">
+	    <include refid="selectTimesheetVo"/>
+		<where>
+			<if test="delFlag == null or delFlag == '' or delFlag == '0'">
+				AND del_flag = '0'
+			</if>
+			<if test="assignId != null">
+				AND assign_id = #{assignId}
+			</if>
+			<if test="employeeId != null">
+				AND submit_by = #{employeeId}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<if test="startDate != null">
+				AND work_date >= #{startDate}
+			</if>
+			<if test="endDate != null">
+				AND work_date <= #{endDate}
+			</if>
+		</where>
+		order by work_date desc, create_time desc
+	</select>
+	
+	<select id="selectTimesheetsByAssignId" parameterType="Long" resultMap="WorkTimesheetResult">
+		<include refid="selectTimesheetVo"/>
+		where assign_id = #{assignId} and del_flag = '0'
+		order by work_date desc
+	</select>
+	
+	<select id="selectTimesheetsByEmployeeId" parameterType="Long" resultMap="WorkTimesheetResult">
+		<include refid="selectTimesheetVo"/>
+		where submit_by = #{employeeId} and del_flag = '0'
+		order by work_date desc
+	</select>
+	
+	<select id="selectTimesheetById" parameterType="Long" resultMap="WorkTimesheetResult">
+		<include refid="selectTimesheetVo"/>
+		where timesheet_id = #{timesheetId} and del_flag = '0'
+	</select>
+	
+	<select id="selectTimesheetsByDateRange" resultMap="WorkTimesheetResult">
+		<include refid="selectTimesheetVo"/>
+		where submit_by = #{param1} 
+		and work_date >= #{param2} 
+		and work_date <= #{param3}
+		and del_flag = '0'
+		order by work_date desc
+	</select>
+	
+ 	<delete id="deleteTimesheetByIds" parameterType="Long">
+ 		update work_timesheet set del_flag = '2' where timesheet_id in
+ 		<foreach collection="array" item="timesheetId" open="(" separator="," close=")">
+ 			#{timesheetId}
+        </foreach>
+ 	</delete>
+ 	
+ 	<update id="updateTimesheet" parameterType="WorkTimesheet">
+ 		update work_timesheet
+ 		<set>
+ 			<if test="assignId != null">assign_id = #{assignId},</if>
+ 			<if test="workDate != null">work_date = #{workDate},</if>
+ 			<if test="workload != null">workload = #{workload},</if>
+ 			<if test="content != null">content = #{content},</if>
+ 			<if test="status != null and status != ''">status = #{status},</if>
+ 			<if test="submitBy != null and submitBy != ''">submit_by = #{submitBy},</if>
+ 			<if test="submitTime != null">submit_time = #{submitTime},</if>
+ 			<if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+ 			<if test="auditTime != null">audit_time = #{auditTime},</if>
+ 			<if test="auditComment != null">audit_comment = #{auditComment},</if>
+ 			<if test="remark != null">remark = #{remark},</if>
+ 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			update_time = sysdate()
+ 		</set>
+ 		where timesheet_id = #{timesheetId}
+	</update>
+ 	
+ 	<insert id="insertTimesheet" parameterType="WorkTimesheet" useGeneratedKeys="true" keyProperty="timesheetId">
+ 		insert into work_timesheet(
+ 			<if test="timesheetId != null and timesheetId != 0">timesheet_id,</if>
+ 			<if test="assignId != null">assign_id,</if>
+ 			<if test="workDate != null">work_date,</if>
+ 			<if test="workload != null">workload,</if>
+ 			<if test="content != null">content,</if>
+ 			<if test="status != null and status != ''">status,</if>
+ 			<if test="submitBy != null and submitBy != ''">submit_by,</if>
+ 			<if test="auditBy != null and auditBy != ''">audit_by,</if>
+ 			<if test="auditComment != null">audit_comment,</if>
+ 			<if test="remark != null and remark != ''">remark,</if>
+ 			<if test="createBy != null and createBy != ''">create_by,</if>
+ 			create_time
+ 		)values(
+ 			<if test="timesheetId != null and timesheetId != 0">#{timesheetId},</if>
+ 			<if test="assignId != null">#{assignId},</if>
+ 			<if test="workDate != null">#{workDate},</if>
+ 			<if test="workload != null">#{workload},</if>
+ 			<if test="content != null">#{content},</if>
+ 			<if test="status != null and status != ''">#{status},</if>
+ 			<if test="submitBy != null and submitBy != ''">#{submitBy},</if>
+ 			<if test="auditBy != null and auditBy != ''">#{auditBy},</if>
+ 			<if test="auditComment != null">#{auditComment},</if>
+ 			<if test="remark != null and remark != ''">#{remark},</if>
+ 			<if test="createBy != null and createBy != ''">#{createBy},</if>
+ 			sysdate()
+ 		)
+	</insert>
+	
+	<select id="sumWorkloadByDateRange" resultType="java.lang.Double">
+		select coalesce(sum(workload), 0) from work_timesheet 
+		where submit_by = #{param1} 
+		and work_date >= #{param2} 
+		and work_date <= #{param3}
+		and del_flag = '0' and status = '1'
+	</select>
+	
+	<select id="sumWorkloadByAssignId" parameterType="Long" resultType="java.lang.Double">
+		select coalesce(sum(workload), 0) from work_timesheet 
+		where assign_id = #{assignId} and del_flag = '0' and status = '1'
+	</select>
+
+</mapper>

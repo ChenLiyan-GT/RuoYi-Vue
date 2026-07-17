@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('进度更新记录列表')" />
+    <th:block th:include="include :: layoutGrid" />
+</head>
+<body class="gray-bg">
+    <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>作业编号：</label>
+                                <input type="text" name="jobNo"/>
+                            </li>
+                            <li>
+                                <label>作业名称：</label>
+                                <input type="text" name="jobName"/>
+                            </li>
+                            <li>
+                                <label>更新人员：</label>
+                                <input type="text" name="updateBy"/>
+                            </li>
+                            <li>
+                                <label>更新日期：</label>
+                                <input type="text" name="updateTime" class="time-input" placeholder="选择日期" style="width: 240px;">
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" shiro:hasPermission="system:work:progressLog:add">
+                <a class="btn btn-success" onclick="$.operate.add()">
+                    <i class="fa fa-plus"></i> 新增
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-info" onclick="viewTimeline()">
+                    <i class="fa fa-clock-o"></i> 时间轴视图
+                </a>
+            </div>
+
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 时间轴视图弹窗 -->
+    <div class="modal fade" id="timelineModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">作业进度时间轴</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>选择作业：</label>
+                        <select class="form-control" id="timelineJobId">
+                            <option value="">---请选择作业---</option>
+                        </select>
+                    </div>
+                    <div id="timelineContainer" style="max-height: 500px; overflow-y: auto;">
+                        <div class="text-center text-muted" style="padding: 50px;">
+                            <i class="fa fa-clock-o fa-3x"></i>
+                            <p>请选择作业查看进度时间轴</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/progressLog";
+        var addFlag = [[${@permission.hasPermi('system:work:progressLog:add')}]];
+        var removeFlag = [[${@permission.hasPermi('system:work:progressLog:remove')}]];
+
+        var progressTypes = {
+            '0': '<span class="badge badge-info">阶段开始</span>',
+            '1': '<span class="badge badge-primary">进度更新</span>',
+            '2': '<span class="badge badge-success">阶段完成</span>',
+            '3': '<span class="badge badge-warning">风险预警</span>',
+            '4': '<span class="badge badge-danger">问题报告</span>',
+            '5': '<span class="badge badge-secondary">其他</span>'
+        };
+
+        $(function() {
+            $(".time-input").datetimepicker({
+                format: "yyyy-mm-dd",
+                minView: "month",
+                language: "zh-CN",
+                autoclose: true
+            });
+        });
+
+        $.table.init({
+            url: prefix + "/list",
+            createUrl: prefix + "/add",
+            removeUrl: prefix + "/remove",
+            modalName: "进度更新记录",
+            columns: [{
+                checkbox: true
+            }, {
+                field: 'logId',
+                title: '记录 ID',
+                visible: false
+            }, {
+                field: 'jobNo',
+                title: '作业编号'
+            }, {
+                field: 'jobName',
+                title: '作业名称'
+            }, {
+                field: 'stageName',
+                title: '阶段名称'
+            }, {
+                field: 'progressType',
+                title: '类型',
+                formatter: function(value, row, index) {
+                    return progressTypes[value] || value;
+                }
+            }, {
+                field: 'progressDesc',
+                title: '进度描述',
+                width: '25%',
+                formatter: function(value, row, index) {
+                    return value ? (value.length > 50 ? value.substring(0, 50) + '...' : value) : '-';
+                }
+            }, {
+                field: 'progressPercent',
+                title: '进度百分比',
+                formatter: function(value, row, index) {
+                    return (value || 0) + '%';
+                }
+            }, {
+                field: 'updateBy',
+                title: '更新人员'
+            }, {
+                field: 'updateTime',
+                title: '更新时间',
+                sortable: true
+            }, {
+                title: '操作',
+                align: 'center',
+                formatter: function(value, row, index) {
+                    var actions = [];
+                    actions.push('<a class="btn btn-info btn-xs" href="javascript:void(0)" onclick="viewDetail(\'' + row.logId + '\')"><i class="fa fa-search"></i>详情</a> ');
+                    actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.logId + '\')"><i class="fa fa-remove"></i>删除</a> ');
+                    return actions.join('');
+                }
+            }]
+        });
+
+        function viewDetail(logId) {
+            $.modal.open("进度详情", prefix + "/detail/" + logId);
+        }
+
+        function viewTimeline() {
+            loadJobs();
+            $('#timelineModal').modal('show');
+        }
+
+        function loadJobs() {
+            $.ajax({
+                url: ctx + "system/work/job/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择作业---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.jobId + '">' + item.jobNo + ' - ' + item.jobName + '</option>';
+                        });
+                        $("#timelineJobId").html(options);
+                    }
+                }
+            });
+        }
+
+        $("#timelineJobId").change(function() {
+            var jobId = $(this).val();
+            if (jobId) {
+                loadTimeline(jobId);
+            } else {
+                $('#timelineContainer').html('<div class="text-center text-muted" style="padding: 50px;"><i class="fa fa-clock-o fa-3x"></i><p>请选择作业查看进度时间轴</p></div>');
+            }
+        });
+
+        function loadTimeline(jobId) {
+            $.ajax({
+                url: prefix + "/timeline/" + jobId,
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var html = '<div class="timeline">';
+                        $.each(result.rows, function(i, item) {
+                            var badgeClass = 'badge-info';
+                            if (item.progressType === '2') badgeClass = 'badge-success';
+                            if (item.progressType === '3') badgeClass = 'badge-warning';
+                            if (item.progressType === '4') badgeClass = 'badge-danger';
+                            
+                            html += '<div class="timeline-item">';
+                            html += '<div class="timeline-marker">' + item.updateTime + '</div>';
+                            html += '<div class="timeline-content">';
+                            html += '<h6><span class="badge ' + badgeClass + '">' + (progressTypes[item.progressType] || item.progressType) + '</span> ' + item.updateBy + '</h6>';
+                            html += '<p>' + (item.progressDesc || '-') + '</p>';
+                            if (item.progressPercent) {
+                                html += '<div class="progress progress-sm"><div class="progress-bar" style="width:' + item.progressPercent + '%"></div></div>';
+                                html += '<small>进度：' + item.progressPercent + '%</small>';
+                            }
+                            html += '</div></div>';
+                        });
+                        html += '</div>';
+                        $('#timelineContainer').html(html);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

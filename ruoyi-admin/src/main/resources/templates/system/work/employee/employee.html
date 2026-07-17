@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('员工管理列表')" />
+    <th:block th:include="include :: layoutGrid" />
+</head>
+<body class="gray-bg">
+    <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>员工姓名：</label>
+                                <input type="text" name="employeeName"/>
+                            </li>
+                            <li>
+                                <label>工号：</label>
+                                <input type="text" name="employeeNo"/>
+                            </li>
+                            <li>
+                                <label>所属部门：</label>
+                                <select name="deptId" th:with="deptList=${@deptService.selectDeptList(new Dept())}" class="form-control">
+                                    <option value="">---请选择---</option>
+                                    <option th:each="dept : ${deptList}" th:value="${dept.deptId}" th:text="${dept.deptName}"></option>
+                                </select>
+                            </li>
+                            <li>
+                                <label>职能类型：</label>
+                                <select name="positionTypeId" class="form-control">
+                                    <option value="">---请选择---</option>
+                                </select>
+                            </li>
+                            <li>
+                                <label>职级：</label>
+                                <input type="text" name="level"/>
+                            </li>
+                            <li>
+                                <label>负载状态：</label>
+                                <select name="loadStatus" class="form-control">
+                                    <option value="">---请选择---</option>
+                                    <option value="0">空闲</option>
+                                    <option value="1">工作中</option>
+                                    <option value="2">过载</option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" shiro:hasPermission="system:work:employee:add">
+                <a class="btn btn-success" onclick="$.operate.add()">
+                    <i class="fa fa-plus"></i> 新增
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-info" onclick="$.table.importExcel()">
+                    <i class="fa fa-upload"></i> 导入
+                </a>
+                <a class="btn btn-default" onclick="$.table.exportExcel()">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+            </div>
+
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/work/employee";
+        var addFlag = [[${@permission.hasPermi('system:work:employee:add')}]];
+        var editFlag = [[${@permission.hasPermi('system:work:employee:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('system:work:employee:remove')}]];
+
+        $(function() {
+            loadPositionTypes();
+        });
+
+        function loadPositionTypes() {
+            $.ajax({
+                url: ctx + "system/work/positionType/listAll",
+                type: "get",
+                success: function(result) {
+                    if (result.code == 0) {
+                        var options = '<option value="">---请选择---</option>';
+                        $.each(result.rows, function(i, item) {
+                            options += '<option value="' + item.positionTypeId + '">' + item.positionTypeName + '</option>';
+                        });
+                        $("select[name='positionTypeId']").html(options);
+                    }
+                }
+            });
+        }
+
+        $.table.init({
+            url: prefix + "/list",
+            createUrl: prefix + "/add",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            importUrl: prefix + "/importData",
+            importTemplateUrl: prefix + "/importTemplate",
+            modalName: "员工",
+            columns: [{
+                checkbox: true
+            }, {
+                field: 'employeeId',
+                title: '员工 ID',
+                visible: false
+            }, {
+                field: 'employeeNo',
+                title: '工号',
+                sortable: true
+            }, {
+                field: 'employeeName',
+                title: '员工姓名'
+            }, {
+                field: 'deptName',
+                title: '所属部门'
+            }, {
+                field: 'positionTypeName',
+                title: '职能类型'
+            }, {
+                field: 'level',
+                title: '职级'
+            }, {
+                field: 'loadStatus',
+                title: '负载状态',
+                formatter: function(value, row, index) {
+                    if (value === '0') {
+                        return '<span class="badge badge-success">空闲</span>';
+                    } else if (value === '1') {
+                        return '<span class="badge badge-primary">工作中</span>';
+                    } else if (value === '2') {
+                        return '<span class="badge badge-danger">过载</span>';
+                    }
+                    return value;
+                }
+            }, {
+                field: 'currentWorkload',
+                title: '当前工时'
+            }, {
+                field: 'maxWorkload',
+                title: '最大工时'
+            }, {
+                field: 'status',
+                title: '状态',
+                formatter: function(value, row, index) {
+                    return $.table.selectDictLabel($.table.selectDictList('sys_normal_disable'), value);
+                }
+            }, {
+                title: '操作',
+                align: 'center',
+                formatter: function(value, row, index) {
+                    var actions = [];
+                    actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.employeeId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                    actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.employeeId + '\')"><i class="fa fa-remove"></i>删除</a> ');
+                    actions.push('<a class="btn btn-info btn-xs" href="javascript:void(0)" onclick="viewWorkload(\'' + row.employeeId + '\')"><i class="fa fa-bar-chart"></i>工时</a> ');
+                    return actions.join('');
+                }
+            }]
+        });
+
+        function viewWorkload(employeeId) {
+            var url = prefix + "/workload/" + employeeId;
+            $.modal.open("员工工时统计", url);
+        }
+    </script>
+</body>
+</html>
