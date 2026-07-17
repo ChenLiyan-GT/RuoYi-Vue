@@ -26,6 +26,14 @@ public interface SysPostMapper
     public List<SysPost> selectPostAll();
 
     /**
+     * 根据用户ID查询岗位
+     * 
+     * @param userId 用户ID
+     * @return 岗位列表
+     */
+    public List<SysPost> selectPostsByUserId(Long userId);
+
+    /**
      * 通过岗位ID查询岗位信息
      * 
      * @param postId 岗位ID
@@ -34,36 +42,12 @@ public interface SysPostMapper
     public SysPost selectPostById(Long postId);
 
     /**
-     * 根据用户ID获取岗位选择框列表
-     * 
-     * @param userId 用户ID
-     * @return 选中岗位ID列表
-     */
-    public List<Long> selectPostListByUserId(Long userId);
-
-    /**
-     * 查询用户所属岗位组
-     * 
-     * @param userName 用户名
-     * @return 结果
-     */
-    public List<SysPost> selectPostsByUserName(String userName);
-
-    /**
-     * 删除岗位信息
-     * 
-     * @param postId 岗位ID
-     * @return 结果
-     */
-    public int deletePostById(Long postId);
-
-    /**
      * 批量删除岗位信息
      * 
-     * @param postIds 需要删除的岗位ID
+     * @param ids 需要删除的数据ID
      * @return 结果
      */
-    public int deletePostByIds(Long[] postIds);
+    public int deletePostByIds(Long[] ids);
 
     /**
      * 修改岗位信息

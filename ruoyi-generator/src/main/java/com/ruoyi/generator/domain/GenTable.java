@@ -1,8 +1,8 @@
 package com.ruoyi.generator.domain;
 
 import java.util.List;
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.apache.commons.lang3.ArrayUtils;
 import com.ruoyi.common.constant.GenConstants;
 import com.ruoyi.common.core.domain.BaseEntity;
@@ -41,9 +41,6 @@ public class GenTable extends BaseEntity
     /** 使用的模板（crud单表操作 tree树表操作 sub主子表操作） */
     private String tplCategory;
 
-    /** 前端类型（element-ui模版 element-plus模版 element-plus-typescript模版） */
-    private String tplWebType;
-
     /** 生成包路径 */
     @NotBlank(message = "生成包路径不能为空")
     private String packageName;
@@ -65,7 +62,7 @@ public class GenTable extends BaseEntity
     private String functionAuthor;
 
     /** 表单布局（单列 双列 三列） */
-    private Integer formColNum;
+    private int formColNum;
 
     /** 生成代码方式（0zip压缩包 1自定义路径） */
     private String genType;
@@ -96,7 +93,7 @@ public class GenTable extends BaseEntity
     private String treeName;
 
     /** 上级菜单ID字段 */
-    private Long parentMenuId;
+    private String parentMenuId;
 
     /** 上级菜单名称字段 */
     private String parentMenuName;
@@ -174,16 +171,6 @@ public class GenTable extends BaseEntity
         this.tplCategory = tplCategory;
     }
 
-    public String getTplWebType()
-    {
-        return tplWebType;
-    }
-
-    public void setTplWebType(String tplWebType)
-    {
-        this.tplWebType = tplWebType;
-    }
-
     public String getPackageName()
     {
         return packageName;
@@ -234,12 +221,12 @@ public class GenTable extends BaseEntity
         this.functionAuthor = functionAuthor;
     }
 
-    public Integer getFormColNum()
+    public int getFormColNum()
     {
         return formColNum;
     }
 
-    public void setFormColNum(Integer formColNum)
+    public void setFormColNum(int formColNum)
     {
         this.formColNum = formColNum;
     }
@@ -334,12 +321,12 @@ public class GenTable extends BaseEntity
         this.treeName = treeName;
     }
 
-    public Long getParentMenuId()
+    public String getParentMenuId()
     {
         return parentMenuId;
     }
 
-    public void setParentMenuId(Long parentMenuId)
+    public void setParentMenuId(String parentMenuId)
     {
         this.parentMenuId = parentMenuId;
     }

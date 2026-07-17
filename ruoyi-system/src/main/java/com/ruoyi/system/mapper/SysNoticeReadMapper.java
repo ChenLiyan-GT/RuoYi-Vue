@@ -57,6 +57,14 @@ public interface SysNoticeReadMapper
     public List<SysNotice> selectNoticeListWithReadStatus(@Param("userId") Long userId, @Param("limit") int limit);
 
     /**
+     * 公告删除时清理对应已读记录
+     *
+     * @param noticeIds 公告ID数组
+     * @return 结果
+     */
+    public int deleteByNoticeIds(@Param("noticeIds") String[] noticeIds);
+
+    /**
      * 查询已阅读某公告的用户列表
      *
      * @param noticeId 公告ID
@@ -64,12 +72,4 @@ public interface SysNoticeReadMapper
      * @return 已读用户列表
      */
     public List<Map<String, Object>> selectReadUsersByNoticeId(@Param("noticeId") Long noticeId, @Param("searchValue") String searchValue);
-
-    /**
-     * 公告删除时清理对应已读记录
-     *
-     * @param noticeIds 公告ID数组
-     * @return 结果
-     */
-    public int deleteByNoticeIds(@Param("noticeIds") Long[] noticeIds);
 }

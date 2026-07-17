@@ -1,20 +1,29 @@
 package com.ruoyi.system.domain;
 
+import java.util.Date;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.core.session.OnlineSession;
+import com.ruoyi.common.enums.OnlineStatus;
+
 /**
- * 当前在线会话
+ * 当前在线会话 sys_user_online
  * 
  * @author ruoyi
  */
-public class SysUserOnline
+public class SysUserOnline extends BaseEntity
 {
-    /** 会话编号 */
-    private String tokenId;
+    private static final long serialVersionUID = 1L;
+    
+    /** 用户会话id */
+    private String sessionId;
 
     /** 部门名称 */
     private String deptName;
 
-    /** 用户名称 */
-    private String userName;
+    /** 登录名称 */
+    private String loginName;
 
     /** 登录IP地址 */
     private String ipaddr;
@@ -28,17 +37,32 @@ public class SysUserOnline
     /** 操作系统 */
     private String os;
 
-    /** 登录时间 */
-    private Long loginTime;
+    /** session创建时间 */
+    private Date startTimestamp;
 
-    public String getTokenId()
+    /** session最后访问时间 */
+    private Date lastAccessTime;
+
+    /** 超时时间，单位为毫秒 */
+    private Long expireTime;
+
+    /** 在线状态 */
+    private OnlineStatus status = OnlineStatus.on_line;
+
+    /** 备份的当前用户会话 */
+    private OnlineSession session;
+
+    /** 序列化的Session数据\uff0c用于服务重吏后恢复会话 */
+    private byte[] sessionData;
+
+    public String getSessionId()
     {
-        return tokenId;
+        return sessionId;
     }
 
-    public void setTokenId(String tokenId)
+    public void setSessionId(String sessionId)
     {
-        this.tokenId = tokenId;
+        this.sessionId = sessionId;
     }
 
     public String getDeptName()
@@ -51,14 +75,14 @@ public class SysUserOnline
         this.deptName = deptName;
     }
 
-    public String getUserName()
+    public String getLoginName()
     {
-        return userName;
+        return loginName;
     }
 
-    public void setUserName(String userName)
+    public void setLoginName(String loginName)
     {
-        this.userName = userName;
+        this.loginName = loginName;
     }
 
     public String getIpaddr()
@@ -101,13 +125,80 @@ public class SysUserOnline
         this.os = os;
     }
 
-    public Long getLoginTime()
+    public Date getStartTimestamp()
     {
-        return loginTime;
+        return startTimestamp;
     }
 
-    public void setLoginTime(Long loginTime)
+    public void setStartTimestamp(Date startTimestamp)
     {
-        this.loginTime = loginTime;
+        this.startTimestamp = startTimestamp;
+    }
+
+    public Date getLastAccessTime()
+    {
+        return lastAccessTime;
+    }
+
+    public void setLastAccessTime(Date lastAccessTime)
+    {
+        this.lastAccessTime = lastAccessTime;
+    }
+
+    public Long getExpireTime()
+    {
+        return expireTime;
+    }
+
+    public void setExpireTime(Long expireTime)
+    {
+        this.expireTime = expireTime;
+    }
+
+    public OnlineStatus getStatus()
+    {
+        return status;
+    }
+
+    public void setStatus(OnlineStatus status)
+    {
+        this.status = status;
+    }
+
+    public OnlineSession getSession()
+    {
+        return session;
+    }
+
+    public void setSession(OnlineSession session)
+    {
+        this.session = session;
+    }
+
+    public byte[] getSessionData()
+    {
+        return sessionData;
+    }
+
+    public void setSessionData(byte[] sessionData)
+    {
+        this.sessionData = sessionData;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
+            .append("sessionId", getSessionId())
+            .append("loginName", getLoginName())
+            .append("deptName", getDeptName())
+            .append("ipaddr", getIpaddr())
+            .append("loginLocation", getLoginLocation())
+            .append("browser", getBrowser())
+            .append("os", getOs())
+            .append("status", getStatus())
+            .append("startTimestamp", getStartTimestamp())
+            .append("lastAccessTime", getLastAccessTime())
+            .append("expireTime", getExpireTime())
+            .toString();
     }
 }

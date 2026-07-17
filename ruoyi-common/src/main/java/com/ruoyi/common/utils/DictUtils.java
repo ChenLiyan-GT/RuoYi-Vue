@@ -1,20 +1,16 @@
 package com.ruoyi.common.utils;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import com.alibaba.fastjson2.JSONArray;
-import com.ruoyi.common.constant.CacheConstants;
+import org.springframework.stereotype.Component;
+import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.core.domain.entity.SysDictData;
-import com.ruoyi.common.core.redis.RedisCache;
-import com.ruoyi.common.utils.spring.SpringUtils;
 
 /**
  * 字典工具类
  * 
  * @author ruoyi
  */
+@Component
 public class DictUtils
 {
     /**
@@ -30,7 +26,7 @@ public class DictUtils
      */
     public static void setDictCache(String key, List<SysDictData> dictDatas)
     {
-        SpringUtils.getBean(RedisCache.class).setCacheObject(getCacheKey(key), dictDatas);
+        CacheUtils.put(getCacheName(), getCacheKey(key), dictDatas);
     }
 
     /**
@@ -41,10 +37,10 @@ public class DictUtils
      */
     public static List<SysDictData> getDictCache(String key)
     {
-        JSONArray arrayCache = SpringUtils.getBean(RedisCache.class).getCacheObject(getCacheKey(key));
-        if (StringUtils.isNotNull(arrayCache))
+        Object cacheObj = CacheUtils.get(getCacheName(), getCacheKey(key));
+        if (StringUtils.isNotNull(cacheObj))
         {
-            return arrayCache.toList(SysDictData.class);
+            return StringUtils.cast(cacheObj);
         }
         return null;
     }
@@ -91,25 +87,37 @@ public class DictUtils
      */
     public static String getDictLabel(String dictType, String dictValue, String separator)
     {
+        StringBuilder propertyString = new StringBuilder();
         List<SysDictData> datas = getDictCache(dictType);
-        if (StringUtils.isNull(datas) || StringUtils.isEmpty(dictValue))
+        if (StringUtils.isNull(datas))
         {
             return StringUtils.EMPTY;
         }
-        Map<String, String> dictMap = datas.stream().collect(HashMap::new, (map, dict) -> map.put(dict.getDictValue(), dict.getDictLabel()), Map::putAll);
-        if (!StringUtils.contains(dictValue, separator))
+        if (StringUtils.containsAny(dictValue, separator))
         {
-            return dictMap.getOrDefault(dictValue, StringUtils.EMPTY);
-        }
-        StringBuilder labelBuilder = new StringBuilder();
-        for (String seperatedValue : dictValue.split(separator))
-        {
-            if (dictMap.containsKey(seperatedValue))
+            for (SysDictData dict : datas)
             {
-                labelBuilder.append(dictMap.get(seperatedValue)).append(separator);
+                for (String value : dictValue.split(separator))
+                {
+                    if (value.equals(dict.getDictValue()))
+                    {
+                        propertyString.append(dict.getDictLabel()).append(separator);
+                        break;
+                    }
+                }
             }
         }
-        return StringUtils.removeEnd(labelBuilder.toString(), separator);
+        else
+        {
+            for (SysDictData dict : datas)
+            {
+                if (dictValue.equals(dict.getDictValue()))
+                {
+                    return dict.getDictLabel();
+                }
+            }
+        }
+        return StringUtils.stripEnd(propertyString.toString(), separator);
     }
 
     /**
@@ -122,25 +130,37 @@ public class DictUtils
      */
     public static String getDictValue(String dictType, String dictLabel, String separator)
     {
+        StringBuilder propertyString = new StringBuilder();
         List<SysDictData> datas = getDictCache(dictType);
-        if (StringUtils.isNull(datas) || StringUtils.isEmpty(dictLabel))
+        if (StringUtils.isNull(datas))
         {
             return StringUtils.EMPTY;
         }
-        Map<String, String> dictMap = datas.stream().collect(HashMap::new, (map, dict) -> map.put(dict.getDictLabel(), dict.getDictValue()), Map::putAll);
-        if (!StringUtils.contains(dictLabel, separator))
+        if (StringUtils.containsAny(dictLabel, separator))
         {
-            return dictMap.getOrDefault(dictLabel, StringUtils.EMPTY);
-        }
-        StringBuilder valueBuilder = new StringBuilder();
-        for (String seperatedValue : dictLabel.split(separator))
-        {
-            if (dictMap.containsKey(seperatedValue))
+            for (SysDictData dict : datas)
             {
-                valueBuilder.append(dictMap.get(seperatedValue)).append(separator);
+                for (String label : dictLabel.split(separator))
+                {
+                    if (label.equals(dict.getDictLabel()))
+                    {
+                        propertyString.append(dict.getDictValue()).append(separator);
+                        break;
+                    }
+                }
             }
         }
-        return StringUtils.removeEnd(valueBuilder.toString(), separator);
+        else
+        {
+            for (SysDictData dict : datas)
+            {
+                if (dictLabel.equals(dict.getDictLabel()))
+                {
+                    return dict.getDictValue();
+                }
+            }
+        }
+        return StringUtils.stripEnd(propertyString.toString(), separator);
     }
 
     /**
@@ -192,7 +212,7 @@ public class DictUtils
      */
     public static void removeDictCache(String key)
     {
-        SpringUtils.getBean(RedisCache.class).deleteObject(getCacheKey(key));
+        CacheUtils.remove(getCacheName(), getCacheKey(key));
     }
 
     /**
@@ -200,8 +220,17 @@ public class DictUtils
      */
     public static void clearDictCache()
     {
-        Collection<String> keys = SpringUtils.getBean(RedisCache.class).keys(CacheConstants.SYS_DICT_KEY + "*");
-        SpringUtils.getBean(RedisCache.class).deleteObject(keys);
+        CacheUtils.removeAll(getCacheName());
+    }
+
+    /**
+     * 获取cache name
+     * 
+     * @return 缓存名
+     */
+    public static String getCacheName()
+    {
+        return Constants.SYS_DICT_CACHE;
     }
 
     /**
@@ -212,6 +241,6 @@ public class DictUtils
      */
     public static String getCacheKey(String configKey)
     {
-        return CacheConstants.SYS_DICT_KEY + configKey;
+        return Constants.SYS_DICT_KEY + configKey;
     }
 }

@@ -13,10 +13,10 @@ public interface IGenTableColumnService
     /**
      * 查询业务字段列表
      * 
-     * @param tableId 业务字段编号
+     * @param genTableColumn 业务字段信息
      * @return 业务字段集合
      */
-    public List<GenTableColumn> selectGenTableColumnListByTableId(Long tableId);
+    public List<GenTableColumn> selectGenTableColumnListByTableId(GenTableColumn genTableColumn);
 
     /**
      * 新增业务字段

@@ -1,18 +1,18 @@
 package com.ruoyi.quartz.controller;
 
 import java.util.List;
-import javax.servlet.http.HttpServletResponse;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.core.controller.BaseController;
@@ -32,55 +32,107 @@ import com.ruoyi.quartz.util.ScheduleUtils;
  * 
  * @author ruoyi
  */
-@RestController
+@Controller
 @RequestMapping("/monitor/job")
 public class SysJobController extends BaseController
 {
+    private String prefix = "monitor/job";
+
     @Autowired
     private ISysJobService jobService;
 
-    /**
-     * 查询定时任务列表
-     */
-    @PreAuthorize("@ss.hasPermi('monitor:job:list')")
-    @GetMapping("/list")
-    public TableDataInfo list(SysJob sysJob)
+    @RequiresPermissions("monitor:job:view")
+    @GetMapping()
+    public String job()
+    {
+        return prefix + "/job";
+    }
+
+    @RequiresPermissions("monitor:job:list")
+    @PostMapping("/list")
+    @ResponseBody
+    public TableDataInfo list(SysJob job)
     {
         startPage();
-        List<SysJob> list = jobService.selectJobList(sysJob);
+        List<SysJob> list = jobService.selectJobList(job);
         return getDataTable(list);
     }
 
-    /**
-     * 导出定时任务列表
-     */
-    @PreAuthorize("@ss.hasPermi('monitor:job:export')")
     @Log(title = "定时任务", businessType = BusinessType.EXPORT)
+    @RequiresPermissions("monitor:job:export")
     @PostMapping("/export")
-    public void export(HttpServletResponse response, SysJob sysJob)
+    @ResponseBody
+    public AjaxResult export(SysJob job)
     {
-        List<SysJob> list = jobService.selectJobList(sysJob);
+        List<SysJob> list = jobService.selectJobList(job);
         ExcelUtil<SysJob> util = new ExcelUtil<SysJob>(SysJob.class);
-        util.exportExcel(response, list, "定时任务");
+        return util.exportExcel(list, "定时任务");
     }
 
-    /**
-     * 获取定时任务详细信息
-     */
-    @PreAuthorize("@ss.hasPermi('monitor:job:query')")
-    @GetMapping(value = "/{jobId}")
-    public AjaxResult getInfo(@PathVariable("jobId") Long jobId)
+    @Log(title = "定时任务", businessType = BusinessType.DELETE)
+    @RequiresPermissions("monitor:job:remove")
+    @PostMapping("/remove")
+    @ResponseBody
+    public AjaxResult remove(String ids) throws SchedulerException
     {
-        return success(jobService.selectJobById(jobId));
+        jobService.deleteJobByIds(ids);
+        return success();
+    }
+
+    @RequiresPermissions("monitor:job:detail")
+    @GetMapping("/detail/{jobId}")
+    public String detail(@PathVariable("jobId") Long jobId, ModelMap mmap)
+    {
+        mmap.put("name", "job");
+        mmap.put("job", jobService.selectJobById(jobId));
+        return prefix + "/detail";
     }
 
     /**
-     * 新增定时任务
+     * 任务调度状态修改
      */
-    @PreAuthorize("@ss.hasPermi('monitor:job:add')")
+    @Log(title = "定时任务", businessType = BusinessType.UPDATE)
+    @RequiresPermissions("monitor:job:changeStatus")
+    @PostMapping("/changeStatus")
+    @ResponseBody
+    public AjaxResult changeStatus(SysJob job) throws SchedulerException
+    {
+        SysJob newJob = jobService.selectJobById(job.getJobId());
+        newJob.setStatus(job.getStatus());
+        return toAjax(jobService.changeStatus(newJob));
+    }
+
+    /**
+     * 任务调度立即执行一次
+     */
+    @Log(title = "定时任务", businessType = BusinessType.UPDATE)
+    @RequiresPermissions("monitor:job:changeStatus")
+    @PostMapping("/run")
+    @ResponseBody
+    public AjaxResult run(SysJob job) throws SchedulerException
+    {
+        boolean result = jobService.run(job);
+        return result ? success() : error("任务不存在或已过期！");
+    }
+
+    /**
+     * 新增调度
+     */
+    @RequiresPermissions("monitor:job:add")
+    @GetMapping("/add")
+    public String add()
+    {
+        return prefix + "/add";
+    }
+
+    /**
+     * 新增保存调度
+     */
     @Log(title = "定时任务", businessType = BusinessType.INSERT)
-    @PostMapping
-    public AjaxResult add(@RequestBody SysJob job) throws SchedulerException, TaskException
+    @RequiresPermissions("monitor:job:add")
+    @PostMapping("/add")
+    @ResponseBody
+    public AjaxResult addSave(@Validated SysJob job) throws SchedulerException, TaskException
     {
         if (!CronUtils.isValid(job.getCronExpression()))
         {
@@ -106,17 +158,29 @@ public class SysJobController extends BaseController
         {
             return error("新增任务'" + job.getJobName() + "'失败，目标字符串不在白名单内");
         }
-        job.setCreateBy(getUsername());
+        job.setCreateBy(getLoginName());
         return toAjax(jobService.insertJob(job));
     }
 
     /**
-     * 修改定时任务
+     * 修改调度
      */
-    @PreAuthorize("@ss.hasPermi('monitor:job:edit')")
+    @RequiresPermissions("monitor:job:edit")
+    @GetMapping("/edit/{jobId}")
+    public String edit(@PathVariable("jobId") Long jobId, ModelMap mmap)
+    {
+        mmap.put("job", jobService.selectJobById(jobId));
+        return prefix + "/edit";
+    }
+
+    /**
+     * 修改保存调度
+     */
     @Log(title = "定时任务", businessType = BusinessType.UPDATE)
-    @PutMapping
-    public AjaxResult edit(@RequestBody SysJob job) throws SchedulerException, TaskException
+    @RequiresPermissions("monitor:job:edit")
+    @PostMapping("/edit")
+    @ResponseBody
+    public AjaxResult editSave(@Validated SysJob job) throws SchedulerException, TaskException
     {
         if (!CronUtils.isValid(job.getCronExpression()))
         {
@@ -128,7 +192,7 @@ public class SysJobController extends BaseController
         }
         else if (StringUtils.containsAnyIgnoreCase(job.getInvokeTarget(), new String[] { Constants.LOOKUP_LDAP, Constants.LOOKUP_LDAPS }))
         {
-            return error("修改任务'" + job.getJobName() + "'失败，目标字符串不允许'ldap(s)'调用");
+            return error("修改任务'" + job.getJobName() + "'失败，目标字符串不允许'ldap'调用");
         }
         else if (StringUtils.containsAnyIgnoreCase(job.getInvokeTarget(), new String[] { Constants.HTTP, Constants.HTTPS }))
         {
@@ -142,44 +206,43 @@ public class SysJobController extends BaseController
         {
             return error("修改任务'" + job.getJobName() + "'失败，目标字符串不在白名单内");
         }
-        job.setUpdateBy(getUsername());
         return toAjax(jobService.updateJob(job));
     }
 
     /**
-     * 定时任务状态修改
+     * 校验cron表达式是否有效
      */
-    @PreAuthorize("@ss.hasPermi('monitor:job:changeStatus')")
-    @Log(title = "定时任务", businessType = BusinessType.UPDATE)
-    @PutMapping("/changeStatus")
-    public AjaxResult changeStatus(@RequestBody SysJob job) throws SchedulerException
+    @PostMapping("/checkCronExpressionIsValid")
+    @ResponseBody
+    public boolean checkCronExpressionIsValid(SysJob job)
     {
-        SysJob newJob = jobService.selectJobById(job.getJobId());
-        newJob.setStatus(job.getStatus());
-        return toAjax(jobService.changeStatus(newJob));
+        return jobService.checkCronExpressionIsValid(job.getCronExpression());
     }
 
     /**
-     * 定时任务立即执行一次
+     * Cron表达式在线生成
      */
-    @PreAuthorize("@ss.hasPermi('monitor:job:changeStatus')")
-    @Log(title = "定时任务", businessType = BusinessType.UPDATE)
-    @PutMapping("/run")
-    public AjaxResult run(@RequestBody SysJob job) throws SchedulerException
+    @GetMapping("/cron")
+    public String cron()
     {
-        boolean result = jobService.run(job);
-        return result ? success() : error("任务不存在或已过期！");
+        return prefix + "/cron";
     }
 
     /**
-     * 删除定时任务
+     * 查询cron表达式近10次的执行时间
      */
-    @PreAuthorize("@ss.hasPermi('monitor:job:remove')")
-    @Log(title = "定时任务", businessType = BusinessType.DELETE)
-    @DeleteMapping("/{jobIds}")
-    public AjaxResult remove(@PathVariable Long[] jobIds) throws SchedulerException
+    @GetMapping("/queryCronExpression")
+    @ResponseBody
+    public AjaxResult queryCronExpression(@RequestParam(value = "cronExpression", required = false) String cronExpression)
     {
-        jobService.deleteJobByIds(jobIds);
-        return success();
+        if (jobService.checkCronExpressionIsValid(cronExpression))
+        {
+            List<String> dateList = CronUtils.getRecentTriggerTime(cronExpression);
+            return success(dateList);
+        }
+        else
+        {
+            return error("表达式无效");
+        }
     }
 }

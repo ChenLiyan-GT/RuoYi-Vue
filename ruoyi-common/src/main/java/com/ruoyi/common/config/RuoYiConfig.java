@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * 读取项目相关配置
+ * 全局配置类
  * 
  * @author ruoyi
  */
@@ -13,13 +13,16 @@ import org.springframework.stereotype.Component;
 public class RuoYiConfig
 {
     /** 项目名称 */
-    private String name;
+    private static String name;
 
     /** 版本 */
-    private String version;
+    private static String version;
 
     /** 版权年份 */
-    private String copyrightYear;
+    private static String copyrightYear;
+
+    /** 实例演示开关 */
+    private static boolean demoEnabled;
 
     /** 上传路径 */
     private static String profile;
@@ -27,37 +30,44 @@ public class RuoYiConfig
     /** 获取地址开关 */
     private static boolean addressEnabled;
 
-    /** 验证码类型 */
-    private static String captchaType;
-
-    public String getName()
+    public static String getName()
     {
         return name;
     }
 
     public void setName(String name)
     {
-        this.name = name;
+        RuoYiConfig.name = name;
     }
 
-    public String getVersion()
+    public static String getVersion()
     {
         return version;
     }
 
     public void setVersion(String version)
     {
-        this.version = version;
+        RuoYiConfig.version = version;
     }
 
-    public String getCopyrightYear()
+    public static String getCopyrightYear()
     {
         return copyrightYear;
     }
 
     public void setCopyrightYear(String copyrightYear)
     {
-        this.copyrightYear = copyrightYear;
+        RuoYiConfig.copyrightYear = copyrightYear;
+    }
+
+    public static boolean isDemoEnabled()
+    {
+        return demoEnabled;
+    }
+
+    public void setDemoEnabled(boolean demoEnabled)
+    {
+        RuoYiConfig.demoEnabled = demoEnabled;
     }
 
     public static String getProfile()
@@ -78,14 +88,6 @@ public class RuoYiConfig
     public void setAddressEnabled(boolean addressEnabled)
     {
         RuoYiConfig.addressEnabled = addressEnabled;
-    }
-
-    public static String getCaptchaType() {
-        return captchaType;
-    }
-
-    public void setCaptchaType(String captchaType) {
-        RuoYiConfig.captchaType = captchaType;
     }
 
     /**

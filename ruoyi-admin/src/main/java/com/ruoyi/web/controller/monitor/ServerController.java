@@ -1,10 +1,11 @@
 package com.ruoyi.web.controller.monitor;
 
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.framework.web.domain.Server;
 
 /**
@@ -12,16 +13,19 @@ import com.ruoyi.framework.web.domain.Server;
  * 
  * @author ruoyi
  */
-@RestController
+@Controller
 @RequestMapping("/monitor/server")
-public class ServerController
+public class ServerController extends BaseController
 {
-    @PreAuthorize("@ss.hasPermi('monitor:server:list')")
+    private String prefix = "monitor/server";
+
+    @RequiresPermissions("monitor:server:view")
     @GetMapping()
-    public AjaxResult getInfo() throws Exception
+    public String server(ModelMap mmap) throws Exception
     {
         Server server = new Server();
         server.copyTo();
-        return AjaxResult.success(server);
+        mmap.put("server", server);
+        return prefix + "/server";
     }
 }

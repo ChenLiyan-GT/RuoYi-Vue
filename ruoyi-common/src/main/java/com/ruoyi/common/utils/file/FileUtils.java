@@ -9,8 +9,8 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -208,6 +208,7 @@ public class FileUtils
      *
      * @param response 响应对象
      * @param realFileName 真实文件名
+     * @return
      */
     public static void setAttachmentResponseHeader(HttpServletResponse response, String realFileName) throws UnsupportedEncodingException
     {
@@ -221,9 +222,7 @@ public class FileUtils
                 .append("utf-8''")
                 .append(percentEncodedFileName);
 
-        response.addHeader("Access-Control-Expose-Headers", "Content-Disposition,download-filename");
         response.setHeader("Content-disposition", contentDispositionValue.toString());
-        response.setHeader("download-filename", percentEncodedFileName);
     }
 
     /**

@@ -27,13 +27,6 @@ public interface ISysConfigService
     public String selectConfigByKey(String configKey);
 
     /**
-     * 获取验证码开关
-     * 
-     * @return true开启，false关闭
-     */
-    public boolean selectCaptchaEnabled();
-
-    /**
      * 查询参数配置列表
      * 
      * @param config 参数配置信息
@@ -58,11 +51,11 @@ public interface ISysConfigService
     public int updateConfig(SysConfig config);
 
     /**
-     * 批量删除参数信息
+     * 批量删除参数配置信息
      * 
-     * @param configIds 需要删除的参数ID
+     * @param ids 需要删除的数据ID
      */
-    public void deleteConfigByIds(Long[] configIds);
+    public void deleteConfigByIds(String ids);
 
     /**
      * 加载参数缓存数据

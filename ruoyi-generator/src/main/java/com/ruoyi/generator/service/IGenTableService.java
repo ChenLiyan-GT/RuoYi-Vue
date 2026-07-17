@@ -61,10 +61,10 @@ public interface IGenTableService
     /**
      * 删除业务信息
      * 
-     * @param tableIds 需要删除的表数据ID
+     * @param ids 需要删除的数据ID
      * @return 结果
      */
-    public void deleteGenTableByIds(Long[] tableIds);
+    public void deleteGenTableByIds(String ids);
 
     /**
      * 创建表
@@ -78,10 +78,9 @@ public interface IGenTableService
      * 导入表结构
      *
      * @param tableList 导入表列表
-     * @param tplWebType 前端类型
      * @param operName 操作人员
      */
-    public void importGenTable(List<GenTable> tableList, String tplWebType, String operName);
+    public void importGenTable(List<GenTable> tableList, String operName);
 
     /**
      * 预览代码
@@ -103,10 +102,9 @@ public interface IGenTableService
      * 生成代码（自定义路径）
      * 
      * @param tableName 表名称
-     * @return 数据
      */
     public void generatorCode(String tableName);
-
+    
     /**
      * 同步数据库
      * 

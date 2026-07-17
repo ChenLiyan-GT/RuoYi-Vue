@@ -42,7 +42,23 @@ public interface SysUserMapper
      * @param userName 用户名
      * @return 用户对象信息
      */
-    public SysUser selectUserByUserName(String userName);
+    public SysUser selectUserByLoginName(String userName);
+
+    /**
+     * 通过手机号码查询用户
+     * 
+     * @param phoneNumber 手机号码
+     * @return 用户对象信息
+     */
+    public SysUser selectUserByPhoneNumber(String phoneNumber);
+
+    /**
+     * 通过邮箱查询用户
+     * 
+     * @param email 邮箱
+     * @return 用户对象信息
+     */
+    public SysUser selectUserByEmail(String email);
 
     /**
      * 通过用户ID查询用户
@@ -53,12 +69,20 @@ public interface SysUserMapper
     public SysUser selectUserById(Long userId);
 
     /**
-     * 新增用户信息
+     * 通过用户ID删除用户
      * 
-     * @param user 用户信息
+     * @param userId 用户ID
      * @return 结果
      */
-    public int insertUser(SysUser user);
+    public int deleteUserById(Long userId);
+
+    /**
+     * 批量删除用户信息
+     * 
+     * @param ids 需要删除的数据ID
+     * @return 结果
+     */
+    public int deleteUserByIds(Long[] ids);
 
     /**
      * 修改用户信息
@@ -87,6 +111,16 @@ public interface SysUserMapper
     public int updateUserStatus(@Param("userId") Long userId, @Param("status") String status);
 
     /**
+     * 重置用户密码
+     * 
+     * @param userId 用户ID
+     * @param password 密码
+     * @param salt 盐
+     * @return 结果
+     */
+    public int resetUserPwd(@Param("userId") Long userId, @Param("password") String password, @Param("salt") String salt);
+
+    /**
      * 更新用户登录信息（IP和登录时间）
      * 
      * @param userId 用户ID
@@ -97,37 +131,20 @@ public interface SysUserMapper
     public int updateLoginInfo(@Param("userId") Long userId, @Param("loginIp") String loginIp, @Param("loginDate") Date loginDate);
 
     /**
-     * 重置用户密码
+     * 新增用户信息
      * 
-     * @param userId 用户ID
-     * @param password 密码
+     * @param user 用户信息
      * @return 结果
      */
-    public int resetUserPwd(@Param("userId") Long userId, @Param("password") String password);
-
-    /**
-     * 通过用户ID删除用户
-     * 
-     * @param userId 用户ID
-     * @return 结果
-     */
-    public int deleteUserById(Long userId);
-
-    /**
-     * 批量删除用户信息
-     * 
-     * @param userIds 需要删除的用户ID
-     * @return 结果
-     */
-    public int deleteUserByIds(Long[] userIds);
+    public int insertUser(SysUser user);
 
     /**
      * 校验用户名称是否唯一
      * 
-     * @param userName 用户名称
+     * @param loginName 登录名称
      * @return 结果
      */
-    public SysUser checkUserNameUnique(String userName);
+    public SysUser checkLoginNameUnique(String loginName);
 
     /**
      * 校验手机号码是否唯一

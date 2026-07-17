@@ -45,6 +45,13 @@ public interface ISysNoticeReadService
     public void markReadBatch(Long userId, Long[] noticeIds);
 
     /**
+     * 删除公告时清理对应已读记录
+     *
+     * @param ids 公告ID字符串（逗号分隔）
+     */
+    public void deleteByNoticeIds(String ids);
+
+    /**
      * 查询已阅读某公告的用户列表
      *
      * @param noticeId  公告ID
@@ -52,11 +59,4 @@ public interface ISysNoticeReadService
      * @return 已读用户列表
      */
     public List<Map<String, Object>> selectReadUsersByNoticeId(Long noticeId, String searchValue);
-
-    /**
-     * 删除公告时清理对应已读记录
-     *
-     * @param noticeIds 公告ID数组
-     */
-    public void deleteByNoticeIds(Long[] noticeIds);
 }

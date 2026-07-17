@@ -1,89 +1,100 @@
 package com.ruoyi.quartz.controller;
 
 import java.util.List;
-import javax.servlet.http.HttpServletResponse;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
+import com.ruoyi.quartz.domain.SysJob;
 import com.ruoyi.quartz.domain.SysJobLog;
 import com.ruoyi.quartz.service.ISysJobLogService;
+import com.ruoyi.quartz.service.ISysJobService;
 
 /**
  * 调度日志操作处理
  * 
  * @author ruoyi
  */
-@RestController
+@Controller
 @RequestMapping("/monitor/jobLog")
 public class SysJobLogController extends BaseController
 {
+    private String prefix = "monitor/job";
+
+    @Autowired
+    private ISysJobService jobService;
+
     @Autowired
     private ISysJobLogService jobLogService;
 
-    /**
-     * 查询定时任务调度日志列表
-     */
-    @PreAuthorize("@ss.hasPermi('monitor:job:list')")
-    @GetMapping("/list")
-    public TableDataInfo list(SysJobLog sysJobLog)
+    @RequiresPermissions("monitor:job:view")
+    @GetMapping()
+    public String jobLog(@RequestParam(value = "jobId", required = false) Long jobId, ModelMap mmap)
+    {
+        if (StringUtils.isNotNull(jobId))
+        {
+            SysJob job = jobService.selectJobById(jobId);
+            mmap.put("job", job);
+        }
+        return prefix + "/jobLog";
+    }
+
+    @RequiresPermissions("monitor:job:list")
+    @PostMapping("/list")
+    @ResponseBody
+    public TableDataInfo list(SysJobLog jobLog)
     {
         startPage();
-        List<SysJobLog> list = jobLogService.selectJobLogList(sysJobLog);
+        List<SysJobLog> list = jobLogService.selectJobLogList(jobLog);
         return getDataTable(list);
     }
 
-    /**
-     * 导出定时任务调度日志列表
-     */
-    @PreAuthorize("@ss.hasPermi('monitor:job:export')")
-    @Log(title = "任务调度日志", businessType = BusinessType.EXPORT)
+    @Log(title = "调度日志", businessType = BusinessType.EXPORT)
+    @RequiresPermissions("monitor:job:export")
     @PostMapping("/export")
-    public void export(HttpServletResponse response, SysJobLog sysJobLog)
+    @ResponseBody
+    public AjaxResult export(SysJobLog jobLog)
     {
-        List<SysJobLog> list = jobLogService.selectJobLogList(sysJobLog);
+        List<SysJobLog> list = jobLogService.selectJobLogList(jobLog);
         ExcelUtil<SysJobLog> util = new ExcelUtil<SysJobLog>(SysJobLog.class);
-        util.exportExcel(response, list, "调度日志");
+        return util.exportExcel(list, "调度日志");
     }
-    
-    /**
-     * 根据调度编号获取详细信息
-     */
-    @PreAuthorize("@ss.hasPermi('monitor:job:query')")
-    @GetMapping(value = "/{jobLogId}")
-    public AjaxResult getInfo(@PathVariable Long jobLogId)
+
+    @Log(title = "调度日志", businessType = BusinessType.DELETE)
+    @RequiresPermissions("monitor:job:remove")
+    @PostMapping("/remove")
+    @ResponseBody
+    public AjaxResult remove(String ids)
     {
-        return success(jobLogService.selectJobLogById(jobLogId));
+        return toAjax(jobLogService.deleteJobLogByIds(ids));
     }
 
-
-    /**
-     * 删除定时任务调度日志
-     */
-    @PreAuthorize("@ss.hasPermi('monitor:job:remove')")
-    @Log(title = "定时任务调度日志", businessType = BusinessType.DELETE)
-    @DeleteMapping("/{jobLogIds}")
-    public AjaxResult remove(@PathVariable Long[] jobLogIds)
+    @RequiresPermissions("monitor:job:detail")
+    @GetMapping("/detail/{jobLogId}")
+    public String detail(@PathVariable("jobLogId") Long jobLogId, ModelMap mmap)
     {
-        return toAjax(jobLogService.deleteJobLogByIds(jobLogIds));
+        mmap.put("name", "jobLog");
+        mmap.put("jobLog", jobLogService.selectJobLogById(jobLogId));
+        return prefix + "/detail";
     }
 
-    /**
-     * 清空定时任务调度日志
-     */
-    @PreAuthorize("@ss.hasPermi('monitor:job:remove')")
     @Log(title = "调度日志", businessType = BusinessType.CLEAN)
-    @DeleteMapping("/clean")
+    @RequiresPermissions("monitor:job:remove")
+    @PostMapping("/clean")
+    @ResponseBody
     public AjaxResult clean()
     {
         jobLogService.cleanJobLog();

@@ -1,6 +1,6 @@
 package com.ruoyi.generator.domain;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 import com.ruoyi.common.core.domain.BaseEntity;
 import com.ruoyi.common.utils.StringUtils;
 
@@ -59,11 +59,11 @@ public class GenTableColumn extends BaseEntity
     /** 查询方式（EQ等于、NE不等于、GT大于、LT小于、LIKE模糊、BETWEEN范围） */
     private String queryType;
 
-    /** 显示类型（input文本框、textarea文本域、select下拉框、checkbox复选框、radio单选框、datetime日期控件、image图片上传控件、upload文件上传控件、editor富文本控件） */
+    /** 显示类型（input文本框、textarea文本域、select下拉框、checkbox复选框、radio单选框、datetime日期控件、upload上传控件、summernote富文本控件） */
     private String htmlType;
 
     /** 字典类型 */
-    private String dictType;
+    private String dictType = "";
 
     /** 排序 */
     private Integer sort;

@@ -53,7 +53,7 @@ public enum BusinessType
     GENCODE,
     
     /**
-     * 清空数据
+     * 清空
      */
     CLEAN,
 }

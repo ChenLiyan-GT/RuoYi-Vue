@@ -1,11 +1,10 @@
 package com.ruoyi.quartz.domain;
 
+import java.io.Serializable;
 import java.util.Date;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.annotation.Excel.ColumnType;
 import com.ruoyi.common.constant.ScheduleConstants;
@@ -18,7 +17,7 @@ import com.ruoyi.quartz.util.CronUtils;
  * 
  * @author ruoyi
  */
-public class SysJob extends BaseEntity
+public class SysJob extends BaseEntity implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
@@ -87,7 +86,7 @@ public class SysJob extends BaseEntity
     }
 
     @NotBlank(message = "调用目标字符串不能为空")
-    @Size(min = 0, max = 500, message = "调用目标字符串长度不能超过500个字符")
+    @Size(min = 0, max = 1000, message = "调用目标字符串长度不能超过500个字符")
     public String getInvokeTarget()
     {
         return invokeTarget;
@@ -110,7 +109,6 @@ public class SysJob extends BaseEntity
         this.cronExpression = cronExpression;
     }
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     public Date getNextValidTime()
     {
         if (StringUtils.isNotEmpty(cronExpression))

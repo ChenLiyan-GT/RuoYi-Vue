@@ -1,138 +1,82 @@
 package com.ruoyi.web.controller.system;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import com.ruoyi.common.constant.Constants;
+import org.springframework.web.bind.annotation.ResponseBody;
+import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.common.core.domain.entity.SysMenu;
-import com.ruoyi.common.core.domain.entity.SysUser;
-import com.ruoyi.common.core.domain.model.LoginBody;
-import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.text.Convert;
-import com.ruoyi.common.utils.DateUtils;
-import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.ServletUtils;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.framework.web.service.SysLoginService;
-import com.ruoyi.framework.web.service.SysPermissionService;
-import com.ruoyi.framework.web.service.TokenService;
-import com.ruoyi.system.service.ISysConfigService;
-import com.ruoyi.system.service.ISysMenuService;
+import com.ruoyi.framework.web.service.ConfigService;
 
 /**
  * 登录验证
  * 
  * @author ruoyi
  */
-@RestController
-public class SysLoginController
+@Controller
+public class SysLoginController extends BaseController
 {
-    @Autowired
-    private SysLoginService loginService;
-
-    @Autowired
-    private ISysMenuService menuService;
-
-    @Autowired
-    private SysPermissionService permissionService;
-
-    @Autowired
-    private TokenService tokenService;
-
-    @Autowired
-    private ISysConfigService configService;
-
     /**
-     * 登录方法
-     * 
-     * @param loginBody 登录信息
-     * @return 结果
+     * 是否开启记住我功能
      */
+    @Value("${shiro.rememberMe.enabled: false}")
+    private boolean rememberMe;
+
+    @Autowired
+    private ConfigService configService;
+
+    @GetMapping("/login")
+    public String login(HttpServletRequest request, HttpServletResponse response, ModelMap mmap)
+    {
+        // 如果是Ajax请求，返回Json字符串。
+        if (ServletUtils.isAjaxRequest(request))
+        {
+            return ServletUtils.renderString(response, "{\"code\":\"1\",\"msg\":\"未登录或登录超时。请重新登录\"}");
+        }
+        // 是否开启记住我
+        mmap.put("isRemembered", rememberMe);
+        // 是否开启用户注册
+        mmap.put("isAllowRegister", Convert.toBool(configService.getKey("sys.account.registerUser"), false));
+        return "login";
+    }
+
     @PostMapping("/login")
-    public AjaxResult login(@RequestBody LoginBody loginBody)
+    @ResponseBody
+    public AjaxResult ajaxLogin(String username, String password, Boolean rememberMe)
     {
-        AjaxResult ajax = AjaxResult.success();
-        // 生成令牌
-        String token = loginService.login(loginBody.getUsername(), loginBody.getPassword(), loginBody.getCode(),
-                loginBody.getUuid());
-        ajax.put(Constants.TOKEN, token);
-        return ajax;
-    }
-
-    /**
-     * 获取用户信息
-     * 
-     * @return 用户信息
-     */
-    @GetMapping("getInfo")
-    public AjaxResult getInfo()
-    {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        SysUser user = loginUser.getUser();
-        // 角色集合
-        Set<String> roles = permissionService.getRolePermission(user);
-        // 权限集合
-        Set<String> permissions = permissionService.getMenuPermission(user);
-        if (!loginUser.getPermissions().equals(permissions))
+        UsernamePasswordToken token = new UsernamePasswordToken(username, password, rememberMe);
+        Subject subject = SecurityUtils.getSubject();
+        try
         {
-            loginUser.setPermissions(permissions);
-            tokenService.refreshToken(loginUser);
+            subject.login(token);
+            return success();
         }
-        AjaxResult ajax = AjaxResult.success();
-        ajax.put("user", user);
-        ajax.put("roles", roles);
-        ajax.put("permissions", permissions);
-        ajax.put("pwdChrtype", getSysAccountChrtype());
-        ajax.put("isDefaultModifyPwd", initPasswordIsModify(user.getPwdUpdateDate()));
-        ajax.put("isPasswordExpired", passwordIsExpiration(user.getPwdUpdateDate()));
-        return ajax;
-    }
-
-    /**
-     * 获取路由信息
-     * 
-     * @return 路由信息
-     */
-    @GetMapping("getRouters")
-    public AjaxResult getRouters()
-    {
-        Long userId = SecurityUtils.getUserId();
-        List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
-        return AjaxResult.success(menuService.buildMenus(menus));
-    }
-
-    // 获取用户密码自定义配置规则
-    public String getSysAccountChrtype()
-    {
-        return Convert.toStr(configService.selectConfigByKey("sys.account.chrtype"), "0");
-    }
-
-    // 检查初始密码是否提醒修改
-    public boolean initPasswordIsModify(Date pwdUpdateDate)
-    {
-        Integer initPasswordModify = Convert.toInt(configService.selectConfigByKey("sys.account.initPasswordModify"));
-        return initPasswordModify != null && initPasswordModify == 1 && pwdUpdateDate == null;
-    }
-
-    // 检查密码是否过期
-    public boolean passwordIsExpiration(Date pwdUpdateDate)
-    {
-        Integer passwordValidateDays = Convert.toInt(configService.selectConfigByKey("sys.account.passwordValidateDays"));
-        if (passwordValidateDays != null && passwordValidateDays > 0)
+        catch (AuthenticationException e)
         {
-            if (StringUtils.isNull(pwdUpdateDate))
+            String msg = "用户或密码错误";
+            if (StringUtils.isNotEmpty(e.getMessage()))
             {
-                // 如果从未修改过初始密码，直接提醒过期
-                return true;
+                msg = e.getMessage();
             }
-            Date nowDate = DateUtils.getNowDate();
-            return DateUtils.differentDaysByMillisecond(nowDate, pwdUpdateDate) > passwordValidateDays;
+            return error(msg);
         }
-        return false;
+    }
+
+    @GetMapping("/unauth")
+    public String unauth()
+    {
+        return "error/unauth";
     }
 }

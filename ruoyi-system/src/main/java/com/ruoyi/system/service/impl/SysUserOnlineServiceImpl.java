@@ -1,9 +1,19 @@
 package com.ruoyi.system.service.impl;
 
+import java.io.Serializable;
+import java.util.Date;
+import java.util.Deque;
+import java.util.List;
+import com.ruoyi.common.utils.spring.SpringUtils;
+import org.apache.shiro.cache.Cache;
+import org.apache.shiro.cache.ehcache.EhCacheManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.ruoyi.common.core.domain.model.LoginUser;
+import com.ruoyi.common.constant.ShiroConstants;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.SysUserOnline;
+import com.ruoyi.system.mapper.SysUserOnlineMapper;
 import com.ruoyi.system.service.ISysUserOnlineService;
 
 /**
@@ -14,83 +24,117 @@ import com.ruoyi.system.service.ISysUserOnlineService;
 @Service
 public class SysUserOnlineServiceImpl implements ISysUserOnlineService
 {
+    @Autowired
+    private SysUserOnlineMapper userOnlineDao;
+
     /**
-     * 通过登录地址查询信息
+     * 通过会话序号查询信息
      * 
-     * @param ipaddr 登录地址
-     * @param user 用户信息
+     * @param sessionId 会话ID
      * @return 在线用户信息
      */
     @Override
-    public SysUserOnline selectOnlineByIpaddr(String ipaddr, LoginUser user)
+    public SysUserOnline selectOnlineById(String sessionId)
     {
-        if (StringUtils.equals(ipaddr, user.getIpaddr()))
-        {
-            return loginUserToUserOnline(user);
-        }
-        return null;
+        return userOnlineDao.selectOnlineById(sessionId);
     }
 
     /**
-     * 通过用户名称查询信息
+     * 通过会话序号删除信息
      * 
-     * @param userName 用户名称
-     * @param user 用户信息
+     * @param sessionId 会话ID
      * @return 在线用户信息
      */
     @Override
-    public SysUserOnline selectOnlineByUserName(String userName, LoginUser user)
+    public void deleteOnlineById(String sessionId)
     {
-        if (StringUtils.equals(userName, user.getUsername()))
+        SysUserOnline userOnline = selectOnlineById(sessionId);
+        if (StringUtils.isNotNull(userOnline))
         {
-            return loginUserToUserOnline(user);
+            userOnlineDao.deleteOnlineById(sessionId);
         }
-        return null;
     }
 
     /**
-     * 通过登录地址/用户名称查询信息
+     * 通过会话序号删除信息
      * 
-     * @param ipaddr 登录地址
-     * @param userName 用户名称
-     * @param user 用户信息
+     * @param sessions 会话ID集合
      * @return 在线用户信息
      */
     @Override
-    public SysUserOnline selectOnlineByInfo(String ipaddr, String userName, LoginUser user)
+    public void batchDeleteOnline(List<String> sessions)
     {
-        if (StringUtils.equals(ipaddr, user.getIpaddr()) && StringUtils.equals(userName, user.getUsername()))
+        for (String sessionId : sessions)
         {
-            return loginUserToUserOnline(user);
+            SysUserOnline userOnline = selectOnlineById(sessionId);
+            if (StringUtils.isNotNull(userOnline))
+            {
+                userOnlineDao.deleteOnlineById(sessionId);
+            }
         }
-        return null;
     }
 
     /**
-     * 设置在线用户信息
+     * 保存会话信息
      * 
-     * @param user 用户信息
-     * @return 在线用户
+     * @param online 会话信息
      */
     @Override
-    public SysUserOnline loginUserToUserOnline(LoginUser user)
+    public void saveOnline(SysUserOnline online)
     {
-        if (StringUtils.isNull(user) || StringUtils.isNull(user.getUser()))
+        userOnlineDao.saveOnline(online);
+    }
+
+    /**
+     * 查询会话集合
+     * 
+     * @param userOnline 在线用户
+     */
+    @Override
+    public List<SysUserOnline> selectUserOnlineList(SysUserOnline userOnline)
+    {
+        return userOnlineDao.selectUserOnlineList(userOnline);
+    }
+
+    /**
+     * 强退用户
+     * 
+     * @param sessionId 会话ID
+     */
+    @Override
+    public void forceLogout(String sessionId)
+    {
+        userOnlineDao.deleteOnlineById(sessionId);
+    }
+
+    /**
+     * 清理用户缓存
+     * 
+     * @param loginName 登录名称
+     * @param sessionId 会话ID
+     */
+    @Override
+    public void removeUserCache(String loginName, String sessionId)
+    {
+        EhCacheManager ehCacheManager = SpringUtils.getBean(EhCacheManager.class);
+        Cache<String, Deque<Serializable>> cache = ehCacheManager.getCache(ShiroConstants.SYS_USERCACHE);
+        Deque<Serializable> deque = cache.get(loginName);
+        if (StringUtils.isEmpty(deque) || deque.size() == 0)
         {
-            return null;
+            return;
         }
-        SysUserOnline sysUserOnline = new SysUserOnline();
-        sysUserOnline.setTokenId(user.getToken());
-        sysUserOnline.setUserName(user.getUsername());
-        sysUserOnline.setIpaddr(user.getIpaddr());
-        sysUserOnline.setLoginLocation(user.getLoginLocation());
-        sysUserOnline.setBrowser(user.getBrowser());
-        sysUserOnline.setOs(user.getOs());
-        sysUserOnline.setLoginTime(user.getLoginTime());
-        if (StringUtils.isNotNull(user.getUser().getDept()))
-        {
-            sysUserOnline.setDeptName(user.getUser().getDept().getDeptName());
-        }
-        return sysUserOnline;
+        deque.remove(sessionId);
+    }
+
+    /**
+     * 查询会话集合
+     * 
+     * @param expiredDate 失效日期
+     */
+    @Override
+    public List<SysUserOnline> selectOnlineByExpired(Date expiredDate)
+    {
+        String lastAccessTime = DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, expiredDate);
+        return userOnlineDao.selectOnlineByExpired(lastAccessTime);
     }
 }

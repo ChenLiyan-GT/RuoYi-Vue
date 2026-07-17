@@ -1,6 +1,6 @@
 @echo off
 echo.
-echo [ÐÅÏ¢] Ê¹ÓÃJarÃüÁîÔËÐÐWeb¹¤³Ì¡£
+echo [ï¿½ï¿½Ï¢] Ê¹ï¿½ï¿½Jarï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Webï¿½ï¿½ï¿½Ì¡ï¿½
 echo.
 
 cd %~dp0
@@ -8,7 +8,16 @@ cd ../ruoyi-admin/target
 
 set JAVA_OPTS=-Xms256m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m
 
-java -jar %JAVA_OPTS% ruoyi-admin.jar
+if exist "D:\openjdk-17\bin\java.exe" (
+    set "JAVA_EXE=D:\openjdk-17\bin\java.exe"
+) else if defined JAVA_HOME (
+    set "JAVA_EXE=%JAVA_HOME%\bin\java.exe"
+) else (
+    set "JAVA_EXE=java"
+)
+
+echo Using Java: %JAVA_EXE%
+"%JAVA_EXE%" -jar %JAVA_OPTS% ruoyi-admin.jar
 
 cd bin
 pause

@@ -3,6 +3,7 @@ package com.ruoyi.system.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.system.domain.SysNotice;
 import com.ruoyi.system.mapper.SysNoticeMapper;
 import com.ruoyi.system.service.ISysNoticeService;
@@ -11,6 +12,7 @@ import com.ruoyi.system.service.ISysNoticeService;
  * 公告 服务层实现
  * 
  * @author ruoyi
+ * @date 2018-06-25
  */
 @Service
 public class SysNoticeServiceImpl implements ISysNoticeService
@@ -69,24 +71,12 @@ public class SysNoticeServiceImpl implements ISysNoticeService
     /**
      * 删除公告对象
      * 
-     * @param noticeId 公告ID
+     * @param ids 需要删除的数据ID
      * @return 结果
      */
     @Override
-    public int deleteNoticeById(Long noticeId)
+    public int deleteNoticeByIds(String ids)
     {
-        return noticeMapper.deleteNoticeById(noticeId);
-    }
-
-    /**
-     * 批量删除公告信息
-     * 
-     * @param noticeIds 需要删除的公告ID
-     * @return 结果
-     */
-    @Override
-    public int deleteNoticeByIds(Long[] noticeIds)
-    {
-        return noticeMapper.deleteNoticeByIds(noticeIds);
+        return noticeMapper.deleteNoticeByIds(Convert.toStrArray(ids));
     }
 }

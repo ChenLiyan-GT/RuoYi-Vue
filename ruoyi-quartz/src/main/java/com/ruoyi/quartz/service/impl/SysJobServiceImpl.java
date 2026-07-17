@@ -1,7 +1,7 @@
 package com.ruoyi.quartz.service.impl;
 
 import java.util.List;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.quartz.JobDataMap;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.constant.ScheduleConstants;
+import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.common.exception.job.TaskException;
 import com.ruoyi.quartz.domain.SysJob;
 import com.ruoyi.quartz.mapper.SysJobMapper;
@@ -32,7 +33,8 @@ public class SysJobServiceImpl implements ISysJobService
     private SysJobMapper jobMapper;
 
     /**
-     * 项目启动时，初始化定时器 主要是防止手动修改数据库导致未同步到定时任务处理（注：不能手动修改数据库ID和任务组名，否则会导致脏数据）
+     * 项目启动时，初始化定时器 
+     * 主要是防止手动修改数据库导致未同步到定时任务处理（注：不能手动修改数据库ID和任务组名，否则会导致脏数据）
      */
     @PostConstruct
     public void init() throws SchedulerException, TaskException
@@ -131,13 +133,14 @@ public class SysJobServiceImpl implements ISysJobService
     /**
      * 批量删除调度信息
      * 
-     * @param jobIds 需要删除的任务ID
+     * @param ids 需要删除的数据ID
      * @return 结果
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteJobByIds(Long[] jobIds) throws SchedulerException
+    public void deleteJobByIds(String ids) throws SchedulerException
     {
+        Long[] jobIds = Convert.toLongArray(ids);
         for (Long jobId : jobIds)
         {
             SysJob job = jobMapper.selectJobById(jobId);
@@ -178,12 +181,11 @@ public class SysJobServiceImpl implements ISysJobService
     {
         boolean result = false;
         Long jobId = job.getJobId();
-        String jobGroup = job.getJobGroup();
-        SysJob properties = selectJobById(job.getJobId());
+        SysJob tmpObj = selectJobById(job.getJobId());
         // 参数
         JobDataMap dataMap = new JobDataMap();
-        dataMap.put(ScheduleConstants.TASK_PROPERTIES, properties);
-        JobKey jobKey = ScheduleUtils.getJobKey(jobId, jobGroup);
+        dataMap.put(ScheduleConstants.TASK_PROPERTIES, tmpObj);
+        JobKey jobKey = ScheduleUtils.getJobKey(jobId, tmpObj.getJobGroup());
         if (scheduler.checkExists(jobKey))
         {
             result = true;

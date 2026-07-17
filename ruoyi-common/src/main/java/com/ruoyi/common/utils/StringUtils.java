@@ -15,6 +15,7 @@ import com.ruoyi.common.core.text.StrFormatter;
  * 
  * @author ruoyi
  */
+@SuppressWarnings("deprecation")
 public class StringUtils extends org.apache.commons.lang3.StringUtils
 {
     /** 空字符串 */
@@ -313,30 +314,6 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
     }
 
     /**
-     * 判断是否为空，并且不是空白字符
-     * 
-     * @param str 要判断的value
-     * @return 结果
-     */
-    public static boolean hasText(String str)
-    {
-        return (str != null && !str.isEmpty() && containsText(str));
-    }
-
-    private static boolean containsText(CharSequence str)
-    {
-        int strLen = str.length();
-        for (int i = 0; i < strLen; i++)
-        {
-            if (!Character.isWhitespace(str.charAt(i)))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * 格式化文本, {} 表示占位符<br>
      * 此方法只是简单将占位符 {} 按照顺序替换为参数<br>
      * 如果想输出 {} 使用 \\转义 { 即可，如果想输出 {} 之前的 \ 使用双转义符 \\\\ 即可<br>
@@ -550,6 +527,22 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
             }
         }
         return false;
+    }
+
+    /**
+     * 删除最后一个字符串
+     *
+     * @param str 输入字符串
+     * @param spit 以什么类型结尾的
+     * @return 截取后的字符串
+     */
+    public static String lastStringDel(String str, String spit)
+    {
+        if (!StringUtils.isEmpty(str) && str.endsWith(spit))
+        {
+            return str.subSequence(0, str.length() - 1).toString();
+        }
+        return str;
     }
 
     /**

@@ -28,10 +28,10 @@ public interface ISysLogininforService
     /**
      * 批量删除系统登录日志
      * 
-     * @param infoIds 需要删除的登录日志ID
+     * @param ids 需要删除的数据
      * @return 结果
      */
-    public int deleteLogininforByIds(Long[] infoIds);
+    public int deleteLogininforByIds(String ids);
 
     /**
      * 清空系统登录日志

@@ -1,121 +1,90 @@
 package com.ruoyi.web.controller.monitor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.TreeSet;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import com.ruoyi.common.constant.CacheConstants;
+import org.springframework.web.bind.annotation.ResponseBody;
+import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.system.domain.SysCache;
+import com.ruoyi.framework.web.service.CacheService;
 
 /**
  * 缓存监控
  * 
  * @author ruoyi
  */
-@RestController
+@Controller
 @RequestMapping("/monitor/cache")
-public class CacheController
+public class CacheController extends BaseController
 {
+    private String prefix = "monitor/cache";
+
     @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    private CacheService cacheService;
 
-    private final static List<SysCache> caches = new ArrayList<SysCache>();
-    {
-        caches.add(new SysCache(CacheConstants.LOGIN_TOKEN_KEY, "用户信息"));
-        caches.add(new SysCache(CacheConstants.SYS_CONFIG_KEY, "配置信息"));
-        caches.add(new SysCache(CacheConstants.SYS_DICT_KEY, "数据字典"));
-        caches.add(new SysCache(CacheConstants.CAPTCHA_CODE_KEY, "验证码"));
-        caches.add(new SysCache(CacheConstants.REPEAT_SUBMIT_KEY, "防重提交"));
-        caches.add(new SysCache(CacheConstants.RATE_LIMIT_KEY, "限流处理"));
-        caches.add(new SysCache(CacheConstants.PWD_ERR_CNT_KEY, "密码错误次数"));
-    }
-
-    @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
+    @RequiresPermissions("monitor:cache:view")
     @GetMapping()
-    public AjaxResult getInfo() throws Exception
+    public String cache(ModelMap mmap)
     {
-        Properties info = (Properties) redisTemplate.execute((RedisCallback<Object>) connection -> connection.info());
-        Properties commandStats = (Properties) redisTemplate.execute((RedisCallback<Object>) connection -> connection.info("commandstats"));
-        Object dbSize = redisTemplate.execute((RedisCallback<Object>) connection -> connection.dbSize());
-
-        Map<String, Object> result = new HashMap<>(3);
-        result.put("info", info);
-        result.put("dbSize", dbSize);
-
-        List<Map<String, String>> pieList = new ArrayList<>();
-        commandStats.stringPropertyNames().forEach(key -> {
-            Map<String, String> data = new HashMap<>(2);
-            String property = commandStats.getProperty(key);
-            data.put("name", StringUtils.removeStart(key, "cmdstat_"));
-            data.put("value", StringUtils.substringBetween(property, "calls=", ",usec"));
-            pieList.add(data);
-        });
-        result.put("commandStats", pieList);
-        return AjaxResult.success(result);
+        mmap.put("cacheNames", cacheService.getCacheNames());
+        return prefix + "/cache";
     }
 
-    @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
-    @GetMapping("/getNames")
-    public AjaxResult cache()
+    @RequiresPermissions("monitor:cache:view")
+    @PostMapping("/getNames")
+    public String getCacheNames(ModelMap mmap)
     {
-        return AjaxResult.success(caches);
+        mmap.put("cacheNames", cacheService.getCacheNames());
+        return prefix + "/cache::fragment-cache-names";
     }
 
-    @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
-    @GetMapping("/getKeys/{cacheName}")
-    public AjaxResult getCacheKeys(@PathVariable String cacheName)
+    @RequiresPermissions("monitor:cache:view")
+    @PostMapping("/getKeys")
+    public String getCacheKeys(String cacheName, ModelMap mmap)
     {
-        Set<String> cacheKeys = redisTemplate.keys(cacheName + "*");
-        return AjaxResult.success(new TreeSet<>(cacheKeys));
+        mmap.put("cacheName", cacheName);
+        mmap.put("cacheKeys", cacheService.getCacheKeys(cacheName));
+        return prefix + "/cache::fragment-cache-kyes";
     }
 
-    @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
-    @GetMapping("/getValue/{cacheName}/{cacheKey}")
-    public AjaxResult getCacheValue(@PathVariable String cacheName, @PathVariable String cacheKey)
+    @RequiresPermissions("monitor:cache:view")
+    @PostMapping("/getValue")
+    public String getCacheValue(String cacheName, String cacheKey, ModelMap mmap)
     {
-        String cacheValue = redisTemplate.opsForValue().get(cacheKey);
-        SysCache sysCache = new SysCache(cacheName, cacheKey, cacheValue);
-        return AjaxResult.success(sysCache);
+        mmap.put("cacheName", cacheName);
+        mmap.put("cacheKey", cacheKey);
+        mmap.put("cacheValue", cacheService.getCacheValue(cacheName, cacheKey));
+        return prefix + "/cache::fragment-cache-value";
     }
 
-    @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
-    @DeleteMapping("/clearCacheName/{cacheName}")
-    public AjaxResult clearCacheName(@PathVariable String cacheName)
+    @RequiresPermissions("monitor:cache:view")
+    @PostMapping("/clearCacheName")
+    @ResponseBody
+    public AjaxResult clearCacheName(String cacheName, ModelMap mmap)
     {
-        Collection<String> cacheKeys = redisTemplate.keys(cacheName + "*");
-        redisTemplate.delete(cacheKeys);
+        cacheService.clearCacheName(cacheName);
         return AjaxResult.success();
     }
 
-    @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
-    @DeleteMapping("/clearCacheKey/{cacheKey}")
-    public AjaxResult clearCacheKey(@PathVariable String cacheKey)
+    @RequiresPermissions("monitor:cache:view")
+    @PostMapping("/clearCacheKey")
+    @ResponseBody
+    public AjaxResult clearCacheKey(String cacheName, String cacheKey, ModelMap mmap)
     {
-        redisTemplate.delete(cacheKey);
+        cacheService.clearCacheKey(cacheName, cacheKey);
         return AjaxResult.success();
     }
 
-    @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
-    @DeleteMapping("/clearCacheAll")
-    public AjaxResult clearCacheAll()
+    @RequiresPermissions("monitor:cache:view")
+    @GetMapping("/clearAll")
+    @ResponseBody
+    public AjaxResult clearAll(ModelMap mmap)
     {
-        Collection<String> cacheKeys = redisTemplate.keys("*");
-        redisTemplate.delete(cacheKeys);
+        cacheService.clearAll();
         return AjaxResult.success();
     }
 }

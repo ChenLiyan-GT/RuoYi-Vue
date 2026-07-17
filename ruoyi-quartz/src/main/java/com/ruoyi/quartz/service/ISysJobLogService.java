@@ -36,10 +36,10 @@ public interface ISysJobLogService
     /**
      * 批量删除调度日志信息
      * 
-     * @param logIds 需要删除的日志ID
+     * @param ids 需要删除的数据ID
      * @return 结果
      */
-    public int deleteJobLogByIds(Long[] logIds);
+    public int deleteJobLogByIds(String ids);
 
     /**
      * 删除任务日志
@@ -48,7 +48,7 @@ public interface ISysJobLogService
      * @return 结果
      */
     public int deleteJobLogById(Long jobId);
-
+    
     /**
      * 清空任务日志
      */

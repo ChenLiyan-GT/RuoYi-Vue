@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.system.domain.SysNotice;
 import com.ruoyi.system.domain.SysNoticeRead;
 import com.ruoyi.system.mapper.SysNoticeReadMapper;
@@ -64,20 +65,20 @@ public class SysNoticeReadServiceImpl implements ISysNoticeReadService
     }
 
     /**
+     * 删除公告时清理对应已读记录
+     */
+    @Override
+    public void deleteByNoticeIds(String ids)
+    {
+        noticeReadMapper.deleteByNoticeIds(Convert.toStrArray(ids));
+    }
+
+    /**
      * 查询已阅读某公告的用户列表
      */
     @Override
     public List<Map<String, Object>> selectReadUsersByNoticeId(Long noticeId, String searchValue)
     {
         return noticeReadMapper.selectReadUsersByNoticeId(noticeId, searchValue);
-    }
-
-    /**
-     * 删除公告时清理对应已读记录
-     */
-    @Override
-    public void deleteByNoticeIds(Long[] noticeIds)
-    {
-        noticeReadMapper.deleteByNoticeIds(noticeIds);
     }
 }

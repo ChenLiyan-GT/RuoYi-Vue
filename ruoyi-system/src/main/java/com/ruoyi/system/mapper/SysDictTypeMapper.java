@@ -50,12 +50,12 @@ public interface SysDictTypeMapper
     public int deleteDictTypeById(Long dictId);
 
     /**
-     * 批量删除字典类型信息
+     * 批量删除字典类型
      * 
-     * @param dictIds 需要删除的字典ID
+     * @param ids 需要删除的数据
      * @return 结果
      */
-    public int deleteDictTypeByIds(Long[] dictIds);
+    public int deleteDictTypeByIds(Long[] ids);
 
     /**
      * 新增字典类型信息

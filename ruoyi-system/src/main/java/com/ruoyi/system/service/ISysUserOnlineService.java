@@ -1,6 +1,7 @@
 package com.ruoyi.system.service;
 
-import com.ruoyi.common.core.domain.model.LoginUser;
+import java.util.Date;
+import java.util.List;
 import com.ruoyi.system.domain.SysUserOnline;
 
 /**
@@ -11,38 +12,64 @@ import com.ruoyi.system.domain.SysUserOnline;
 public interface ISysUserOnlineService
 {
     /**
-     * 通过登录地址查询信息
+     * 通过会话序号查询信息
      * 
-     * @param ipaddr 登录地址
-     * @param user 用户信息
+     * @param sessionId 会话ID
      * @return 在线用户信息
      */
-    public SysUserOnline selectOnlineByIpaddr(String ipaddr, LoginUser user);
+    public SysUserOnline selectOnlineById(String sessionId);
 
     /**
-     * 通过用户名称查询信息
+     * 通过会话序号删除信息
      * 
-     * @param userName 用户名称
-     * @param user 用户信息
+     * @param sessionId 会话ID
      * @return 在线用户信息
      */
-    public SysUserOnline selectOnlineByUserName(String userName, LoginUser user);
+    public void deleteOnlineById(String sessionId);
 
     /**
-     * 通过登录地址/用户名称查询信息
+     * 通过会话序号删除信息
      * 
-     * @param ipaddr 登录地址
-     * @param userName 用户名称
-     * @param user 用户信息
+     * @param sessions 会话ID集合
      * @return 在线用户信息
      */
-    public SysUserOnline selectOnlineByInfo(String ipaddr, String userName, LoginUser user);
+    public void batchDeleteOnline(List<String> sessions);
 
     /**
-     * 设置在线用户信息
+     * 保存会话信息
      * 
-     * @param user 用户信息
-     * @return 在线用户
+     * @param online 会话信息
      */
-    public SysUserOnline loginUserToUserOnline(LoginUser user);
+    public void saveOnline(SysUserOnline online);
+
+    /**
+     * 查询会话集合
+     * 
+     * @param userOnline 分页参数
+     * @return 会话集合
+     */
+    public List<SysUserOnline> selectUserOnlineList(SysUserOnline userOnline);
+
+    /**
+     * 强退用户
+     * 
+     * @param sessionId 会话ID
+     */
+    public void forceLogout(String sessionId);
+
+    /**
+     * 清理用户缓存
+     * 
+     * @param loginName 登录名称
+     * @param sessionId 会话ID
+     */
+    public void removeUserCache(String loginName, String sessionId);
+
+    /**
+     * 查询会话集合
+     * 
+     * @param expiredDate 有效期
+     * @return 会话集合
+     */
+    public List<SysUserOnline> selectOnlineByExpired(Date expiredDate);
 }
