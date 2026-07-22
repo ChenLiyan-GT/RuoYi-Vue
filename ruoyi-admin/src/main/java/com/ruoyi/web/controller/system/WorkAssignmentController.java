@@ -218,8 +218,9 @@ public class WorkAssignmentController extends BaseController
         result.put("currentWorkload", currentWorkload);
         result.put("completedWorkload", completedWorkload);
         result.put("maxWorkload", employee.getMaxWorkload());
-        result.put("availableWorkload", employee.getMaxWorkload() - currentWorkload);
-        result.put("loadRatio", currentWorkload / employee.getMaxWorkload() * 100);
+        double maxWorkload = employee.getMaxWorkload().doubleValue();
+        result.put("availableWorkload", maxWorkload - currentWorkload);
+        result.put("loadRatio", currentWorkload / maxWorkload * 100);
         
         return result;
     }

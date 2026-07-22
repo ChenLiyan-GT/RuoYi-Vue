@@ -25,6 +25,9 @@ public class WorkTimesheet extends BaseEntity
     @Excel(name = "分配 ID", cellType = ColumnType.NUMERIC)
     private Long assignId;
 
+    /** 员工 ID（查询参数） */
+    private Long employeeId;
+
     /** 工作日期 */
     @Excel(name = "工作日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date workDate;
@@ -49,6 +52,21 @@ public class WorkTimesheet extends BaseEntity
     @Excel(name = "状态", readConverterExp = "0=草稿，1=已提交，2=已审核")
     private String status;
 
+    /** 审核人 */
+    @Excel(name = "审核人")
+    private String auditBy;
+
+    /** 审核时间 */
+    @Excel(name = "审核时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date auditTime;
+
+    /** 审核意见 */
+    @Excel(name = "审核意见")
+    private String auditComment;
+
+    /** 删除标志 */
+    private String delFlag;
+
     public Long getTimesheetId()
     {
         return timesheetId;
@@ -67,6 +85,16 @@ public class WorkTimesheet extends BaseEntity
     public void setAssignId(Long assignId)
     {
         this.assignId = assignId;
+    }
+
+    public Long getEmployeeId()
+    {
+        return employeeId;
+    }
+
+    public void setEmployeeId(Long employeeId)
+    {
+        this.employeeId = employeeId;
     }
 
     public Date getWorkDate()
@@ -129,19 +157,64 @@ public class WorkTimesheet extends BaseEntity
         this.status = status;
     }
 
+    public String getAuditBy()
+    {
+        return auditBy;
+    }
+
+    public void setAuditBy(String auditBy)
+    {
+        this.auditBy = auditBy;
+    }
+
+    public Date getAuditTime()
+    {
+        return auditTime;
+    }
+
+    public void setAuditTime(Date auditTime)
+    {
+        this.auditTime = auditTime;
+    }
+
+    public String getAuditComment()
+    {
+        return auditComment;
+    }
+
+    public void setAuditComment(String auditComment)
+    {
+        this.auditComment = auditComment;
+    }
+
+    public String getDelFlag()
+    {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("timesheetId", getTimesheetId())
             .append("assignId", getAssignId())
+            .append("employeeId", getEmployeeId())
             .append("workDate", getWorkDate())
             .append("workload", getWorkload())
             .append("content", getContent())
             .append("submitBy", getSubmitBy())
             .append("submitTime", getSubmitTime())
             .append("status", getStatus())
+            .append("auditBy", getAuditBy())
+            .append("auditTime", getAuditTime())
+            .append("auditComment", getAuditComment())
             .append("createTime", getCreateTime())
             .append("updateTime", getUpdateTime())
+            .append("delFlag", getDelFlag())
             .toString();
     }
 }

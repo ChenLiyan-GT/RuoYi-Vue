@@ -12,21 +12,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="status"          column="status"            />
 		<result property="assignBy"        column="assign_by"         />
 		<result property="assignTime"      column="assign_time"       />
-		<result property="startDate"       column="start_date"        />
-		<result property="endDate"         column="end_date"          />
-		<result property="actualEndDate"   column="actual_end_date"   />
-		<result property="priority"        column="priority"          />
+		<result property="completeTime"    column="complete_time"     />
 		<result property="createBy"        column="create_by"         />
 		<result property="createTime"      column="create_time"       />
 		<result property="updateBy"        column="update_by"         />
 		<result property="updateTime"      column="update_time"       />
 		<result property="remark"          column="remark"            />
+		<result property="delFlag"         column="del_flag"          />
 	</resultMap>
 	
 	<sql id="selectAssignmentVo">
         select assign_id, job_stage_id, employee_id, workload, status, 
-               assign_by, assign_time, start_date, end_date, actual_end_date, 
-               priority, create_by, create_time, update_by, update_time, remark 
+               assign_by, assign_time, complete_time,
+               create_by, create_time, update_by, update_time, remark, del_flag 
 		from work_assignment
     </sql>
 	
@@ -72,7 +70,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<select id="selectPendingAssignments" parameterType="Long" resultMap="WorkAssignmentResult">
 		<include refid="selectAssignmentVo"/>
 		where employee_id = #{param1} and status = '0' and del_flag = '0'
-		order by priority desc, assign_time asc
+		order by assign_time asc
 	</select>
 	
  	<delete id="deleteAssignmentByIds" parameterType="Long">
@@ -95,10 +93,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="status != null and status != ''">status = #{status},</if>
  			<if test="assignBy != null and assignBy != ''">assign_by = #{assignBy},</if>
  			<if test="assignTime != null">assign_time = #{assignTime},</if>
- 			<if test="startDate != null">start_date = #{startDate},</if>
- 			<if test="endDate != null">end_date = #{endDate},</if>
- 			<if test="actualEndDate != null">actual_end_date = #{actualEndDate},</if>
- 			<if test="priority != null">priority = #{priority},</if>
+ 			<if test="completeTime != null">complete_time = #{completeTime},</if>
  			<if test="remark != null">remark = #{remark},</if>
  			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
  			update_time = sysdate()
@@ -110,7 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		update work_assignment 
 		set status = #{param2}, update_time = sysdate()
 		<if test="param2 == '2'">
-			, actual_end_date = curdate()
+			, complete_time = curdate()
 		</if>
 		where assign_id = #{param1}
 	</update>
@@ -123,9 +118,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="workload != null">workload,</if>
  			<if test="status != null and status != ''">status,</if>
  			<if test="assignBy != null and assignBy != ''">assign_by,</if>
- 			<if test="startDate != null">start_date,</if>
- 			<if test="endDate != null">end_date,</if>
- 			<if test="priority != null">priority,</if>
  			<if test="remark != null and remark != ''">remark,</if>
  			<if test="createBy != null and createBy != ''">create_by,</if>
  			create_time
@@ -136,9 +128,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="workload != null">#{workload},</if>
  			<if test="status != null and status != ''">#{status},</if>
  			<if test="assignBy != null and assignBy != ''">#{assignBy},</if>
- 			<if test="startDate != null">#{startDate},</if>
- 			<if test="endDate != null">#{endDate},</if>
- 			<if test="priority != null">#{priority},</if>
  			<if test="remark != null and remark != ''">#{remark},</if>
  			<if test="createBy != null and createBy != ''">#{createBy},</if>
  			sysdate()

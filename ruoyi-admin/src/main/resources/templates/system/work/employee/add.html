@@ -79,22 +79,20 @@
         function loadDepts() {
             $.ajax({
                 url: ctx + "system/dept/list",
-                type: "get",
+                type: "post",
                 success: function(result) {
-                    if (result.code == 0) {
-                        var options = '<option value="">---请选择---</option>';
-                        $.each(result.rows, function(i, item) {
-                            options += '<option value="' + item.deptId + '">' + item.deptName + '</option>';
-                        });
-                        $("#deptId").html(options);
-                    }
+                    var options = '<option value="">---请选择---</option>';
+                    $.each(result, function(i, item) {
+                        options += '<option value="' + item.deptId + '">' + item.deptName + '</option>';
+                    });
+                    $("#deptId").html(options);
                 }
             });
         }
 
         function loadPositionTypes() {
             $.ajax({
-                url: prefix + "/positionType/listAll",
+                url: ctx + "system/work/positionType/list/all",
                 type: "get",
                 success: function(result) {
                     if (result.code == 0) {

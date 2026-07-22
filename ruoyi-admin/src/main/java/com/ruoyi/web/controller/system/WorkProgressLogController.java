@@ -126,7 +126,7 @@ public class WorkProgressLogController extends BaseController
                               @RequestParam(required = false) String remark)
     {
         return toAjax(workProgressLogService.recordProgress(jobStageId, employeeId, progress, 
-                                                             workload, content, remark, getUsername()));
+                                                             workload, content, remark, getLoginName()));
     }
 
     /**

@@ -21,12 +21,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="updateBy"        column="update_by"       />
 		<result property="updateTime"      column="update_time"     />
 		<result property="remark"          column="remark"          />
+		<result property="delFlag"         column="del_flag"        />
 	</resultMap>
 	
 	<sql id="selectJobVo">
         select job_id, job_no, job_name, dept_id, template_id, total_workload, 
                status, start_date, end_date, actual_end_date, progress, 
-               create_by, create_time, update_by, update_time, remark 
+               create_by, create_time, update_by, update_time, remark, del_flag 
 		from work_job
     </sql>
 	
@@ -52,10 +53,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				AND status = #{status}
 			</if>
 			<if test="startDate != null">
-				AND start_date >= #{startDate}
+				AND start_date <![CDATA[ >= ]]> #{startDate}
 			</if>
 			<if test="endDate != null">
-				AND end_date <= #{endDate}
+				AND end_date <![CDATA[ <= ]]> #{endDate}
 			</if>
 		</where>
 		order by create_time desc

@@ -1,465 +1,296 @@
-# 工具 API
+# 工具API
 
 **本文档中引用的文件**
-- [BuildController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/BuildController.java)
-- [SwaggerController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)
-- [TestController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/TestController.java)
-- [BaseController.java](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/controller/BaseController.java)
+- [BuildController.java](../../../src/main/java/com/ruoyi/web/controller/tool/BuildController.java)
+- [SwaggerController.java](../../../src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)
+- [TestController.java](../../../src/main/java/com/ruoyi/web/controller/tool/TestController.java)(L27-L175)
 - [R.java](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/domain/R.java)
+- [BaseController.java](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/controller/BaseController.java)
 
 ## 目录
 1. [简介](#简介)
 2. [项目架构概览](#项目架构概览)
 3. [核心数据模型](#核心数据模型)
-4. [API 端点](#api 端点)
-5. [表单构建功能](#表单构建功能)
-6. [Swagger 文档集成](#swagger 文档集成)
-7. [权限控制与角色管理](#权限控制与角色管理)
-8. [错误处理与异常管理](#错误处理与异常管理)
-9. [总结](#总结)
+4. [API端点](#api端点)
+5. [权限控制](#权限控制)
+6. [错误处理](#错误处理)
+7. [总结](#总结)
 
 ## 简介
 
-- **系统描述**: 工具 API 模块提供系统开发辅助工具，包括表单构建器、Swagger API 文档集成以及测试接口。该模块主要用于支持开发人员进行快速原型设计和 API 调试。
-- **核心功能**: 
-  - 表单构建器：可视化表单设计工具
-  - Swagger 集成：自动生成 API 文档
-  - 测试接口：提供用户 CRUD 操作的示例接口
-- **技术架构**: 基于 Spring Boot + Shiro 的分层架构，继承自 `BaseController` 基类，使用 `R<T>` 统一响应格式
-- **用户角色**: 主要面向系统管理员和开发人员，需要相应权限才能访问
+- **系统描述**：工具模块提供表单构建、Swagger 接口文档和用户测试接口三类辅助功能，属于 RuoYi 后台管理系统中的开发工具集。
+- **核心功能**：
+  - 表单构建：可视化表单设计器入口
+  - Swagger 接口：在线 API 文档查看与调试
+  - 测试接口：基于内存的 CRUD 示例接口，用于 Swagger 功能演示
+- **技术架构**：遵循 RuoYi 分层架构，Controller 层继承 [BaseController](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/controller/BaseController.java)，通过 Shiro 注解控制权限，REST 接口统一使用 [R\<T\>](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/domain/R.java) 泛型响应封装。
+- **用户角色**：面向系统管理员和开发人员，需具备相应工具权限方可访问。
 
 ## 项目架构概览
 
 ```mermaid
 graph TB
-    A[客户端层] --> B[API 网关层]
-    B --> C[工具 Controller 层]
-    C --> D[BaseController 基类]
-    D --> E[业务服务层]
-    E --> F[数据访问层]
-    
-    C --> G[表单构建器]
-    C --> H[Swagger 文档]
-    C --> I[测试接口]
-    
-    G --> J[/tool/build]
-    H --> K[/tool/swagger]
-    I --> L[/test/user]
+    A[浏览器客户端] --> B[Shiro 过滤链]
+    B --> C[BuildController /tool/build]
+    B --> D[SwaggerController /tool/swagger]
+    B --> E[TestController /test/user]
+    C --> F[Thymeleaf 模板渲染]
+    D --> G[重定向至 Swagger UI]
+    E --> H[内存 LinkedHashMap 存储]
+    E --> I[R<T> 泛型响应]
 ```
 
 **图表来源**
-- [BuildController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/BuildController.java)
-- [SwaggerController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)
-- [TestController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/TestController.java)
+- [BuildController.java](../../../src/main/java/com/ruoyi/web/controller/tool/BuildController.java)
+- [SwaggerController.java](../../../src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)
+- [TestController.java](../../../src/main/java/com/ruoyi/web/controller/tool/TestController.java)
 
 ## 核心数据模型
 
+### UserEntity
+
+`UserEntity` 是 [TestController](../../../src/main/java/com/ruoyi/web/controller/tool/TestController.java)(L108-L175) 中定义的内部类，用于测试接口的数据承载，使用 `@Schema` 注解标注 Swagger 文档信息。
+
 ```mermaid
 classDiagram
-    class BaseController {
-        -logger: Logger
-        +initBinder()
-        +startPage()
-        +getDataTable()
-        +success()
-        +error()
-        +getSysUser()
-        +getUserId()
-    }
-    
-    class R~T~ {
-        -code: int
-        -msg: String
-        -data: T
-        +ok()
-        +fail()
-        +isSuccess()
-        +isError()
-    }
-    
     class UserEntity {
-        -userId: Integer
-        -username: String
-        -password: String
-        -mobile: String
-        +getUserId()
-        +setUserId()
-        +getUsername()
-        +setUsername()
-        +getPassword()
-        +setPassword()
-        +getMobile()
-        +setMobile()
+        -Integer userId
+        -String username
+        -String password
+        -String mobile
+        +getUserId() Integer
+        +setUserId(Integer userId) void
+        +getUsername() String
+        +setUsername(String username) void
+        +getPassword() String
+        +setPassword(String password) void
+        +getMobile() String
+        +setMobile(String mobile) void
     }
-    
-    class BuildController {
-        -prefix: String
-        +build()
-    }
-    
-    class SwaggerController {
-        +index()
-    }
-    
-    class TestController {
-        -users: Map
-        +userList()
-        +getUser()
-        +save()
-        +update()
-        +delete()
-    }
-    
-    BaseController <|-- BuildController
-    BaseController <|-- SwaggerController
-    BaseController <|-- TestController
-    TestController --> UserEntity
-    TestController --> R
 ```
 
-**关键属性说明**
+| 属性 | 类型 | 说明 | Schema 标注 |
+|------|------|------|-------------|
+| userId | Integer | 用户ID | 用户ID |
+| username | String | 用户名称 | 用户名称 |
+| password | String | 用户密码 | 用户密码 |
+| mobile | String | 用户手机 | 用户手机 |
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| code | int | 响应状态码，0 表示成功，500 表示失败 |
-| msg | String | 响应消息，描述操作结果 |
-| data | T | 响应数据，泛型类型 |
-| userId | Integer | 用户唯一标识 |
-| username | String | 用户名称 |
-| password | String | 用户密码 |
-| mobile | String | 手机号码 |
+> 数据存储：使用 `LinkedHashMap<Integer, UserEntity>` 内存存储，预置两条测试数据（admin/ry），应用重启后数据丢失。
 
 **章节来源**
-- [R.java](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/domain/R.java)(L10-L24)
-- [UserEntity](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/TestController.java)(L108-L121)
+- [TestController.java](../../../src/main/java/com/ruoyi/web/controller/tool/TestController.java)(L108-L175)
 
-## API 端点
+## API端点
 
-### 按功能分组
+### 表单构建端点
 
-#### 表单构建器端点
+| HTTP方法 | 路径 | 权限 | 返回类型 | 说明 |
+|----------|------|------|----------|------|
+| GET | `/tool/build` | `tool:build:view` | Thymeleaf 视图 | 表单构建器页面 |
 
-| 方法 | 路径 | 说明 | 权限要求 |
-|------|------|------|----------|
-| GET | `/tool/build` | 表单构建器页面 | `tool:build:view` |
-
-**请求示例**
-```http
-GET /tool/build HTTP/1.1
-```
-
-**响应**
-- 返回视图：`tool/build/build`
+该端点返回 `tool/build/build` 模板页面，用于可视化拖拽构建表单。
 
 **章节来源**
-- [BuildController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/BuildController.java)(L14-L25)
+- [BuildController.java](../../../src/main/java/com/ruoyi/web/controller/tool/BuildController.java)(L20-L25)
 
-#### Swagger 文档端点
+### Swagger 接口端点
 
-| 方法 | 路径 | 说明 | 权限要求 |
-|------|------|------|----------|
-| GET | `/tool/swagger` | Swagger UI 文档首页 | `tool:swagger:view` |
+| HTTP方法 | 路径 | 权限 | 返回类型 | 说明 |
+|----------|------|------|----------|------|
+| GET | `/tool/swagger` | `tool:swagger:view` | 重定向 | 跳转至 Swagger UI |
 
-**请求示例**
-```http
-GET /tool/swagger HTTP/1.1
-```
-
-**响应**
-- 重定向到：`/swagger-ui/index.html`
+该端点将请求重定向到 `/swagger-ui/index.html`，进入 SpringDoc 生成的在线 API 文档界面。
 
 **章节来源**
-- [SwaggerController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)(L14-L23)
+- [SwaggerController.java](../../../src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)(L18-L23)
 
-#### 测试接口端点
+### 测试接口端点
 
-| 方法 | 路径 | 说明 | 权限要求 |
-|------|------|------|----------|
-| GET | `/test/user/list` | 获取用户列表 | 无 |
-| GET | `/test/user/{userId}` | 获取用户详情 | 无 |
-| POST | `/test/user/save` | 新增用户 | 无 |
-| PUT | `/test/user/update` | 更新用户 | 无 |
-| DELETE | `/test/user/{userId}` | 删除用户 | 无 |
+`@Tag(name = "用户信息管理")` 标注，所有接口返回 [R\<T\>](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/domain/R.java) 泛型响应。
 
-**请求/响应示例**
+#### 获取用户列表
 
-**1. 获取用户列表**
-```http
-GET /test/user/list HTTP/1.1
+```
+GET /test/user/list
 ```
 
-响应：
+- **权限**：无额外权限要求（@RestController，未标注 @RequiresPermissions）
+- **响应示例**：
+
 ```json
 {
-  "code": 0,
+  "code": 200,
   "msg": "操作成功",
   "data": [
     {
       "userId": 1,
       "username": "admin",
-      "password": "admin123",
+      "password": "***",
       "mobile": "15888888888"
     },
     {
       "userId": 2,
       "username": "ry",
-      "password": "admin123",
+      "password": "***",
       "mobile": "15666666666"
     }
   ]
 }
 ```
 
-**2. 获取用户详情**
-```http
-GET /test/user/1 HTTP/1.1
+> password 字段已脱敏，实际值为明文存储。
+
+#### 获取用户详细
+
+```
+GET /test/user/{userId}
 ```
 
-响应：
+- **路径参数**：`userId`（Integer，必填）
+- **响应示例**（成功）：
+
 ```json
 {
-  "code": 0,
+  "code": 200,
   "msg": "操作成功",
   "data": {
     "userId": 1,
     "username": "admin",
-    "password": "admin123",
+    "password": "***",
     "mobile": "15888888888"
   }
 }
 ```
 
-**3. 新增用户**
-```http
-POST /test/user/save HTTP/1.1
-Content-Type: application/json
-
-{
-  "userId": 3,
-  "username": "test",
-  "password": "test123",
-  "mobile": "13900000000"
-}
-```
-
-响应：
-```json
-{
-  "code": 0,
-  "msg": "操作成功",
-  "data": null
-}
-```
-
-**4. 更新用户**
-```http
-PUT /test/user/update HTTP/1.1
-Content-Type: application/json
-
-{
-  "userId": 3,
-  "username": "test_updated",
-  "password": "test123",
-  "mobile": "13900000000"
-}
-```
-
-响应：
-```json
-{
-  "code": 0,
-  "msg": "操作成功",
-  "data": null
-}
-```
-
-**5. 删除用户**
-```http
-DELETE /test/user/3 HTTP/1.1
-```
-
-响应：
-```json
-{
-  "code": 0,
-  "msg": "操作成功",
-  "data": null
-}
-```
-
-**章节来源**
-- [TestController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/TestController.java)(L38-L105)
-
-## 表单构建功能
-
-表单构建器提供可视化的表单设计功能，支持拖拽式表单元素配置。
-
-**功能特性**
-- 可视化表单设计界面
-- 支持多种表单元素类型
-- 可配置表单字段属性
-- 生成表单模板代码
-
-**访问方式**
-- 通过 `/tool/build` 路径访问
-- 需要 `tool:build:view` 权限
-
-**章节来源**
-- [BuildController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/BuildController.java)
-
-## Swagger 文档集成
-
-系统集成了 Swagger (OpenAPI 3.0) 用于自动生成 API 文档。
-
-**功能特性**
-- 自动扫描 `@RestController` 注解的控制器
-- 支持 `@Tag`、`@Operation`、`@Schema` 等注解
-- 提供交互式 API 测试界面
-- 实时生成 API 文档
-
-**Swagger 注解说明**
-
-| 注解 | 用途 | 示例 |
-|------|------|------|
-| `@Tag` | 标记控制器分组 | `@Tag(name = "用户信息管理")` |
-| `@Operation` | 描述接口操作 | `@Operation(summary = "获取用户列表")` |
-| `@Schema` | 描述数据模型字段 | `@Schema(title = "用户 ID")` |
-
-**访问方式**
-- 通过 `/tool/swagger` 路径访问
-- 自动重定向到 `/swagger-ui/index.html`
-- 需要 `tool:swagger:view` 权限
-
-**章节来源**
-- [SwaggerController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)
-- [TestController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/TestController.java)(L18-L20)
-
-## 权限控制与角色管理
-
-### 权限配置
-
-| 端点 | 权限标识 | 说明 |
-|------|----------|------|
-| `/tool/build` | `tool:build:view` | 表单构建器查看权限 |
-| `/tool/swagger` | `tool:swagger:view` | Swagger 文档查看权限 |
-
-### 权限验证流程
-
-```mermaid
-flowchart TD
-    A[请求到达] --> B{权限注解检查}
-    B -->|@RequiresPermissions| C[Shiro 权限验证]
-    B -->|无注解 | D[直接放行]
-    C --> E{权限是否匹配}
-    E -->|是 | F[执行控制器方法]
-    E -->|否 | G[返回 403 禁止访问]
-```
-
-**章节来源**
-- [BuildController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/BuildController.java)(L20)
-- [SwaggerController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)(L18)
-
-## 示例请求与响应
-
-### 1. 构建信息查询
-```http
-GET /tool/build HTTP/1.1
-```
-
-响应示例：
-```json
-{
-  "code": 0,
-  "msg": "操作成功",
-  "data": {
-    "version": "4.8.3",
-    "startTime": "2026-07-17 10:00:00",
-    "runTime": "2 小时 30 分钟"
-  }
-}
-```
-
-### 2. Swagger 文档入口
-```http
-GET /tool/swagger HTTP/1.1
-```
-
-响应示例：
-- 302 重定向到 `/swagger-ui/index.html`
-
-### 3. 测试用户新增
-```http
-POST /test/user/save HTTP/1.1
-Content-Type: application/json
-
-{
-  "userId": 3,
-  "username": "test",
-  "password": "test123",
-  "mobile": "13900000000"
-}
-```
-
-响应示例：
-```json
-{
-  "code": 0,
-  "msg": "操作成功",
-  "data": null
-}
-```
-
-## 错误处理与异常管理
-
-### 异常类型分类
-
-| 异常场景 | 处理方式 | 响应码 |
-|----------|----------|--------|
-| 用户不存在 | 返回错误消息 | 500 |
-| 参数为空 | 返回错误消息 | 500 |
-| 权限不足 | Shiro 拦截 | 403 |
-| 系统异常 | 全局异常处理器 | 500 |
-
-### 错误响应格式
+- **响应示例**（用户不存在）：
 
 ```json
 {
   "code": 500,
-  "msg": "错误描述信息",
-  "data": null
+  "msg": "用户不存在"
 }
 ```
 
-### 状态码说明
+#### 新增用户
 
-| 状态码 | 含义 | 说明 |
-|--------|------|------|
-| 0 | 成功 | 操作成功完成 |
-| 500 | 失败 | 操作失败或系统异常 |
-| 403 | 禁止访问 | 权限不足 |
+```
+POST /test/user/save
+```
+
+- **请求参数**：UserEntity 表单字段（userId、username、password、mobile）
+- **校验规则**：userId 不能为空
+- **响应示例**（成功）：
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功"
+}
+```
+
+- **响应示例**（userId 为空）：
+
+```json
+{
+  "code": 500,
+  "msg": "用户ID不能为空"
+}
+```
+
+#### 更新用户
+
+```
+PUT /test/user/update
+```
+
+- **请求体**：JSON 格式的 UserEntity 对象
+- **校验规则**：userId 不能为空，用户必须存在
+- **请求示例**：
+
+```json
+{
+  "userId": 1,
+  "username": "admin_new",
+  "password": "***",
+  "mobile": "15999999999"
+}
+```
+
+- **响应示例**（用户不存在）：
+
+```json
+{
+  "code": 500,
+  "msg": "用户不存在"
+}
+```
+
+#### 删除用户信息
+
+```
+DELETE /test/user/{userId}
+```
+
+- **路径参数**：`userId`（Integer，必填）
+- **响应示例**（成功）：
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功"
+}
+```
+
+- **响应示例**（用户不存在）：
+
+```json
+{
+  "code": 500,
+  "msg": "用户不存在"
+}
+```
 
 **章节来源**
-- [R.java](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/domain/R.java)(L14-L18)
-- [TestController.java](../../../../ruoyi-admin/src/main/java/com/ruoyi/web/controller/tool/TestController.java)(L55-L58)
+- [TestController.java](../../../src/main/java/com/ruoyi/web/controller/tool/TestController.java)(L27-L106)
+
+## 权限控制
+
+| 端点路径 | 权限标识 | 类型 | 说明 |
+|----------|----------|------|------|
+| `/tool/build` | `tool:build:view` | 视图页面 | 需通过 Shiro 认证并拥有表单构建查看权限 |
+| `/tool/swagger` | `tool:swagger:view` | 视图页面 | 需通过 Shiro 认证并拥有 Swagger 查看权限 |
+| `/test/user/**` | 无 | REST API | 无额外权限要求，仅需登录认证 |
+
+> BuildController 和 SwaggerController 使用 `@Controller` + `@RequiresPermissions`，属于页面级权限控制；TestController 使用 `@RestController`，未标注权限注解。
+
+**章节来源**
+- [BuildController.java](../../../src/main/java/com/ruoyi/web/controller/tool/BuildController.java)(L20)
+- [SwaggerController.java](../../../src/main/java/com/ruoyi/web/controller/tool/SwaggerController.java)(L18)
+
+## 错误处理
+
+测试接口通过 [R\<T\>](../../../../ruoyi-common/src/main/java/com/ruoyi/common/core/domain/R.java) 统一返回错误信息，常见错误场景：
+
+| 错误场景 | 触发条件 | 返回 code | 返回 msg |
+|----------|----------|-----------|----------|
+| 用户不存在 | 查询/更新/删除时 userId 未找到 | 500 | 用户不存在 |
+| 用户ID为空 | 新增/更新时 userId 为 null | 500 | 用户ID不能为空 |
 
 ## 总结
 
-- **主要特点**:
-  1. 提供可视化表单构建工具，支持快速原型设计
-  2. 集成 Swagger 3.0，自动生成 API 文档
-  3. 提供完整的测试接口示例，支持 CRUD 操作演示
-  4. 统一的响应格式 `R<T>`，便于前端处理
-  5. 基于 Shiro 的权限控制，保障接口安全
+- **主要特点**：
+  1. 表单构建和 Swagger 均为页面入口型端点，通过 Shiro 权限控制访问
+  2. 测试接口提供完整的 CRUD 操作示例，使用内存存储，适合开发调试
+  3. 统一使用 R\<T\> 泛型响应封装，保持与系统其他接口一致的响应格式
+  4. TestController 完整集成 SpringDoc 注解（@Tag、@Operation、@Schema），可直接在 Swagger UI 中展示
+  5. 表单构建与 Swagger 接口返回视图/重定向，测试接口返回 JSON 数据
 
-- **技术亮点**:
-  1. 使用 OpenAPI 3.0 注解 (`@Tag`、`@Operation`、`@Schema`)
-  2. 泛型响应类 `R<T>` 支持多种数据类型
-  3. 继承 `BaseController` 基类，复用通用方法
-  4. 使用 `LinkedHashMap` 维护数据顺序
-  5. 支持 RESTful 风格的 API 设计
+- **技术亮点**：
+  1. @Tag/@Operation 注解实现 API 文档自动化
+  2. @Schema 注解为实体字段提供语义描述
+  3. R\<T\> 泛型响应确保类型安全
+  4. 内存存储方案实现零依赖的快速演示
+  5. Shiro 权限注解与 Controller 注解协同控制访问
 
-- **业务价值**: 
-  - 表单构建器降低前端开发成本，提高开发效率
-  - Swagger 文档帮助开发人员快速了解和使用 API
-  - 测试接口为新开发人员提供参考示例
-  - 统一的权限管理保障系统安全性
+- **业务价值**：工具模块为开发人员提供表单可视化设计、API 文档在线调试和接口规范演示能力，降低开发与联调成本。

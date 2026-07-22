@@ -18,6 +18,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.system.work.domain.WorkTimesheet;
 import com.ruoyi.system.work.service.IWorkTimesheetService;
 import com.ruoyi.system.work.service.IWorkAssignmentService;
@@ -162,7 +163,7 @@ public class WorkTimesheetController extends BaseController
     @ResponseBody
     public AjaxResult submit(@PathVariable("timesheetId") Long timesheetId)
     {
-        return toAjax(workTimesheetService.submitTimesheet(timesheetId, getUsername()));
+        return toAjax(workTimesheetService.submitTimesheet(timesheetId, getLoginName()));
     }
 
     /**
@@ -175,7 +176,7 @@ public class WorkTimesheetController extends BaseController
     public AjaxResult approve(@PathVariable("timesheetId") Long timesheetId,
                                @RequestParam(required = false) String auditComment)
     {
-        return toAjax(workTimesheetService.auditTimesheet(timesheetId, "2", auditComment, getUsername()));
+        return toAjax(workTimesheetService.auditTimesheet(timesheetId, "2", auditComment, getLoginName()));
     }
 
     /**
@@ -188,7 +189,28 @@ public class WorkTimesheetController extends BaseController
     public AjaxResult reject(@PathVariable("timesheetId") Long timesheetId,
                               @RequestParam(required = false) String auditComment)
     {
-        return toAjax(workTimesheetService.auditTimesheet(timesheetId, "3", auditComment, getUsername()));
+        return toAjax(workTimesheetService.auditTimesheet(timesheetId, "3", auditComment, getLoginName()));
+    }
+
+    /**
+     * 批量审核工时记录
+     */
+    @RequiresPermissions("system:work:timesheet:edit")
+    @Log(title = "工时记录", businessType = BusinessType.UPDATE)
+    @PostMapping("/batchAudit")
+    @ResponseBody
+    public AjaxResult batchAudit(@RequestParam String timesheetIds)
+    {
+        String[] idArray = Convert.toStrArray(timesheetIds);
+        for (String id : idArray)
+        {
+            WorkTimesheet timesheet = workTimesheetService.selectTimesheetById(Long.valueOf(id));
+            if (timesheet != null && "1".equals(timesheet.getStatus()))
+            {
+                workTimesheetService.auditTimesheet(Long.valueOf(id), "2", null, getLoginName());
+            }
+        }
+        return success();
     }
 
     /**

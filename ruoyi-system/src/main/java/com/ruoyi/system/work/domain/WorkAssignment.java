@@ -53,6 +53,9 @@ public class WorkAssignment extends BaseEntity
     @Excel(name = "备注")
     private String remark;
 
+    /** 删除标志 */
+    private String delFlag;
+
     public Long getAssignId()
     {
         return assignId;
@@ -143,6 +146,16 @@ public class WorkAssignment extends BaseEntity
         this.remark = remark;
     }
 
+    public String getDelFlag()
+    {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -155,6 +168,7 @@ public class WorkAssignment extends BaseEntity
             .append("assignTime", getAssignTime())
             .append("completeTime", getCompleteTime())
             .append("remark", getRemark())
+            .append("delFlag", getDelFlag())
             .toString();
     }
 }

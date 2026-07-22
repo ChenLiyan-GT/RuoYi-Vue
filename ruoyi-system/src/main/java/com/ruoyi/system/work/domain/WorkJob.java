@@ -66,6 +66,9 @@ public class WorkJob extends BaseEntity
     @Excel(name = "备注")
     private String remark;
 
+    /** 删除标志 */
+    private String delFlag;
+
     public Long getJobId()
     {
         return jobId;
@@ -194,6 +197,16 @@ public class WorkJob extends BaseEntity
         this.remark = remark;
     }
 
+    public String getDelFlag()
+    {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -213,6 +226,7 @@ public class WorkJob extends BaseEntity
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
+            .append("delFlag", getDelFlag())
             .toString();
     }
 }

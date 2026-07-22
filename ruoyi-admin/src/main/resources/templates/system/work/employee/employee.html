@@ -2,7 +2,6 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
 <head>
     <th:block th:include="include :: header('员工管理列表')" />
-    <th:block th:include="include :: layoutGrid" />
 </head>
 <body class="gray-bg">
     <div class="container-div">
@@ -21,9 +20,8 @@
                             </li>
                             <li>
                                 <label>所属部门：</label>
-                                <select name="deptId" th:with="deptList=${@deptService.selectDeptList(new Dept())}" class="form-control">
+                                <select name="deptId" class="form-control">
                                     <option value="">---请选择---</option>
-                                    <option th:each="dept : ${deptList}" th:value="${dept.deptId}" th:text="${dept.deptName}"></option>
                                 </select>
                             </li>
                             <li>
@@ -85,12 +83,27 @@
         var removeFlag = [[${@permission.hasPermi('system:work:employee:remove')}]];
 
         $(function() {
+            loadDepts();
             loadPositionTypes();
         });
 
+        function loadDepts() {
+            $.ajax({
+                url: ctx + "system/dept/list",
+                type: "post",
+                success: function(result) {
+                    var options = '<option value="">---请选择---</option>';
+                    $.each(result, function(i, item) {
+                        options += '<option value="' + item.deptId + '">' + item.deptName + '</option>';
+                    });
+                    $("select[name='deptId']").html(options);
+                }
+            });
+        }
+
         function loadPositionTypes() {
             $.ajax({
-                url: ctx + "system/work/positionType/listAll",
+                url: ctx + "system/work/positionType/list/all",
                 type: "get",
                 success: function(result) {
                     if (result.code == 0) {

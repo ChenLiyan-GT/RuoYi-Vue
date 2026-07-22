@@ -46,6 +46,9 @@ public class WorkStageTemplate extends BaseEntity
     @Excel(name = "状态", readConverterExp = "0=启用，1=禁用")
     private String status;
 
+    /** 删除标志 */
+    private String delFlag;
+
     public Long getTemplateId()
     {
         return templateId;
@@ -126,6 +129,16 @@ public class WorkStageTemplate extends BaseEntity
         this.status = status;
     }
 
+    public String getDelFlag()
+    {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -141,6 +154,7 @@ public class WorkStageTemplate extends BaseEntity
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
+            .append("delFlag", getDelFlag())
             .toString();
     }
 }

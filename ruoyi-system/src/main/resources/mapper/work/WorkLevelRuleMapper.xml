@@ -11,11 +11,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="minStage"      column="min_stage"     />
 		<result property="maxStage"      column="max_stage"     />
 		<result property="description"   column="description"   />
+		<result property="delFlag"       column="del_flag"      />
+		<result property="createBy"      column="create_by"     />
 		<result property="createTime"    column="create_time"   />
+		<result property="updateBy"      column="update_by"     />
+		<result property="updateTime"    column="update_time"   />
+		<result property="remark"        column="remark"        />
 	</resultMap>
 	
 	<sql id="selectLevelRuleVo">
-        select rule_id, level, level_name, min_stage, max_stage, description, create_time 
+        select rule_id, level, level_name, min_stage, max_stage, description, del_flag, create_by, create_time, update_by, update_time, remark 
 		from work_level_rule
     </sql>
 	
@@ -34,6 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	
 	<select id="selectLevelRuleAll" resultMap="WorkLevelRuleResult">
 		<include refid="selectLevelRuleVo"/>
+		where del_flag = '0'
 		order by level asc
 	</select>
 	
@@ -47,12 +53,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		where level = #{level} limit 1
 	</select>
 	
- 	<delete id="deleteLevelRuleByIds" parameterType="Long">
- 		delete from work_level_rule where rule_id in
+ 	<update id="deleteLevelRuleByIds" parameterType="Long">
+ 		update work_level_rule set del_flag = '2' where rule_id in
  		<foreach collection="array" item="ruleId" open="(" separator="," close=")">
  			#{ruleId}
         </foreach>
- 	</delete>
+ 	</update>
  	
  	<update id="updateLevelRule" parameterType="WorkLevelRule">
  		update work_level_rule
@@ -62,6 +68,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="minStage != null and minStage != ''">min_stage = #{minStage},</if>
  			<if test="maxStage != null and maxStage != ''">max_stage = #{maxStage},</if>
  			<if test="description != null">description = #{description},</if>
+ 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+ 			<if test="remark != null">remark = #{remark},</if>
+ 			update_time = sysdate()
  		</set>
  		where rule_id = #{ruleId}
 	</update>
@@ -74,6 +83,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="minStage != null and minStage != ''">min_stage,</if>
  			<if test="maxStage != null and maxStage != ''">max_stage,</if>
  			<if test="description != null and description != ''">description,</if>
+ 			<if test="createBy != null and createBy != ''">create_by,</if>
+ 			<if test="remark != null and remark != ''">remark,</if>
  			create_time
  		)values(
  			<if test="ruleId != null and ruleId != 0">#{ruleId},</if>
@@ -82,6 +93,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="minStage != null and minStage != ''">#{minStage},</if>
  			<if test="maxStage != null and maxStage != ''">#{maxStage},</if>
  			<if test="description != null and description != ''">#{description},</if>
+ 			<if test="createBy != null and createBy != ''">#{createBy},</if>
+ 			<if test="remark != null and remark != ''">#{remark},</if>
  			sysdate()
  		)
 	</insert>

@@ -1,5 +1,6 @@
 package com.ruoyi.system.work.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -118,16 +119,14 @@ public class WorkProgressLogServiceImpl implements IWorkProgressLogService
     {
         // 获取上一阶段的进度
         WorkProgressLog latestLog = progressLogMapper.selectLatestProgress(jobStageId);
-        Double prevProgress = latestLog != null ? latestLog.getProgress() : 0.0;
+        BigDecimal prevProgress = latestLog != null ? latestLog.getProgress() : BigDecimal.ZERO;
         
         // 创建进度记录
         WorkProgressLog progressLog = new WorkProgressLog();
         progressLog.setJobStageId(jobStageId);
         progressLog.setEmployeeId(employeeId);
-        progressLog.setProgress(progress);
+        progressLog.setProgress(BigDecimal.valueOf(progress));
         progressLog.setPrevProgress(prevProgress);
-        progressLog.setWorkload(workload);
-        progressLog.setContent(content);
         progressLog.setRemark(remark);
         progressLog.setCreateBy(createBy);
         

@@ -2,7 +2,6 @@
 <html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
 <head>
     <th:block th:include="include :: header('工时记录列表')" />
-    <th:block th:include="include :: layoutGrid" />
 </head>
 <body class="gray-bg">
     <div class="container-div">
@@ -25,11 +24,12 @@
                             </li>
                             <li>
                                 <label>审核状态：</label>
-                                <select name="auditStatus" class="form-control">
+                                <select name="status" class="form-control">
                                     <option value="">---请选择---</option>
-                                    <option value="0">待审核</option>
-                                    <option value="1">已通过</option>
-                                    <option value="2">已驳回</option>
+                                    <option value="0">草稿</option>
+                                    <option value="1">已提交</option>
+                                    <option value="2">已通过</option>
+                                    <option value="3">已驳回</option>
                                 </select>
                             </li>
                             <li>
@@ -69,10 +69,11 @@
         var editFlag = [[${@permission.hasPermi('system:work:timesheet:edit')}]];
         var removeFlag = [[${@permission.hasPermi('system:work:timesheet:remove')}]];
 
-        var auditStatusNames = {
-            '0': '<span class="badge badge-warning">待审核</span>',
-            '1': '<span class="badge badge-success">已通过</span>',
-            '2': '<span class="badge badge-danger">已驳回</span>'
+        var statusNames = {
+            '0': '<span class="badge badge-info">草稿</span>',
+            '1': '<span class="badge badge-warning">已提交</span>',
+            '2': '<span class="badge badge-success">已通过</span>',
+            '3': '<span class="badge badge-danger">已驳回</span>'
         };
 
         $(function() {
@@ -113,27 +114,39 @@
                 title: '工作日期',
                 sortable: true
             }, {
-                field: 'workHours',
+                field: 'workload',
                 title: '工时',
-                sortable: true
+                sortable: true,
+                formatter: function(value, row, index) {
+                    return value != null ? value : '-';
+                }
             }, {
-                field: 'workContent',
+                field: 'content',
                 title: '工作内容',
                 width: '20%',
                 formatter: function(value, row, index) {
                     return value ? (value.length > 30 ? value.substring(0, 30) + '...' : value) : '-';
                 }
             }, {
-                field: 'auditStatus',
+                field: 'status',
                 title: '审核状态',
                 formatter: function(value, row, index) {
-                    return auditStatusNames[value] || value;
+                    return statusNames[value] || value;
                 }
             }, {
-                field: 'auditDate',
-                title: '审核日期'
+                field: 'auditTime',
+                title: '审核日期',
+                formatter: function(value, row, index) {
+                    return value ? value : '-';
+                }
             }, {
-                field: 'auditRemark',
+                field: 'auditBy',
+                title: '审核人',
+                formatter: function(value, row, index) {
+                    return value ? value : '-';
+                }
+            }, {
+                field: 'auditComment',
                 title: '审核意见',
                 formatter: function(value, row, index) {
                     return value ? (value.length > 20 ? value.substring(0, 20) + '...' : value) : '-';
@@ -143,11 +156,13 @@
                 align: 'center',
                 formatter: function(value, row, index) {
                     var actions = [];
-                    if (row.auditStatus === '0') {
+                    if (row.status === '1') {
                         actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="auditPass(\'' + row.timesheetId + '\')"><i class="fa fa-check"></i>通过</a> ');
                         actions.push('<a class="btn btn-danger btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="auditReject(\'' + row.timesheetId + '\')"><i class="fa fa-times"></i>驳回</a> ');
                     }
-                    actions.push('<a class="btn btn-info btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.timesheetId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                    if (row.status === '0') {
+                        actions.push('<a class="btn btn-info btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.timesheetId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                    }
                     actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.timesheetId + '\')"><i class="fa fa-remove"></i>删除</a> ');
                     return actions.join('');
                 }
@@ -155,18 +170,18 @@
         });
 
         function auditPass(timesheetId) {
-            $.modal.prompt("请输入审核意见（可选）：", function(remark) {
-                $.operate.post(prefix + "/auditPass/" + timesheetId, { remark: remark || '' });
+            $.modal.prompt("请输入审核意见（可选）：", function(auditComment) {
+                $.operate.post(prefix + "/approve/" + timesheetId, { auditComment: auditComment || '' });
             });
         }
 
         function auditReject(timesheetId) {
-            $.modal.prompt("请输入驳回原因：", function(reason) {
-                if (!reason) {
+            $.modal.prompt("请输入驳回原因：", function(auditComment) {
+                if (!auditComment) {
                     $.modal.alertWarning("请输入驳回原因");
                     return;
                 }
-                $.operate.post(prefix + "/auditReject/" + timesheetId, { reason: reason });
+                $.operate.post(prefix + "/reject/" + timesheetId, { auditComment: auditComment });
             });
         }
 

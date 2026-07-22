@@ -40,6 +40,9 @@ public class WorkProgressLog extends BaseEntity
     @Excel(name = "备注")
     private String remark;
 
+    /** 删除标志 */
+    private String delFlag;
+
     public Long getLogId()
     {
         return logId;
@@ -100,6 +103,16 @@ public class WorkProgressLog extends BaseEntity
         this.remark = remark;
     }
 
+    public String getDelFlag()
+    {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -110,6 +123,7 @@ public class WorkProgressLog extends BaseEntity
             .append("prevProgress", getPrevProgress())
             .append("remark", getRemark())
             .append("createTime", getCreateTime())
+            .append("delFlag", getDelFlag())
             .toString();
     }
 }

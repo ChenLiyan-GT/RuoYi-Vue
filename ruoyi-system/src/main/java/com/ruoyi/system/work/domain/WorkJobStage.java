@@ -73,6 +73,9 @@ public class WorkJobStage extends BaseEntity
     @Excel(name = "进度", cellType = ColumnType.NUMERIC)
     private BigDecimal progress;
 
+    /** 删除标志 */
+    private String delFlag;
+
     public Long getJobStageId()
     {
         return jobStageId;
@@ -213,6 +216,16 @@ public class WorkJobStage extends BaseEntity
         this.progress = progress;
     }
 
+    public String getDelFlag()
+    {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -232,6 +245,7 @@ public class WorkJobStage extends BaseEntity
             .append("progress", getProgress())
             .append("createTime", getCreateTime())
             .append("updateTime", getUpdateTime())
+            .append("delFlag", getDelFlag())
             .toString();
     }
 }

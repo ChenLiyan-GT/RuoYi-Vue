@@ -38,6 +38,9 @@ public class WorkLevelRule extends BaseEntity
     @Excel(name = "描述")
     private String description;
 
+    /** 删除标志 */
+    private String delFlag;
+
     public Long getRuleId()
     {
         return ruleId;
@@ -98,6 +101,16 @@ public class WorkLevelRule extends BaseEntity
         this.description = description;
     }
 
+    public String getDelFlag()
+    {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag)
+    {
+        this.delFlag = delFlag;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -108,6 +121,7 @@ public class WorkLevelRule extends BaseEntity
             .append("maxStage", getMaxStage())
             .append("description", getDescription())
             .append("createTime", getCreateTime())
+            .append("delFlag", getDelFlag())
             .toString();
     }
 }

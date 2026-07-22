@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -134,7 +133,9 @@ public class WorkAssignmentServiceImpl implements IWorkAssignmentService
         if (employee != null)
         {
             Double currentWorkload = assignmentMapper.sumEmployeeWorkload(employee.getEmployeeId());
-            if (currentWorkload + workAssignment.getWorkload() > employee.getMaxWorkload())
+            Double currentWorkloadVal = currentWorkload != null ? currentWorkload : 0.0;
+            BigDecimal totalWorkload = BigDecimal.valueOf(currentWorkloadVal).add(workAssignment.getWorkload());
+            if (totalWorkload.compareTo(employee.getMaxWorkload()) > 0)
             {
                 throw new ServiceException("员工当前负载已满，无法分配更多工作");
             }
@@ -257,10 +258,9 @@ public class WorkAssignmentServiceImpl implements IWorkAssignmentService
             WorkAssignment assignment = new WorkAssignment();
             assignment.setJobStageId(jobStageId);
             assignment.setEmployeeId(es.getEmployee().getEmployeeId());
-            assignment.setWorkload(workloadPerEmployee);
+            assignment.setWorkload(BigDecimal.valueOf(workloadPerEmployee));
             assignment.setStatus("0"); // 待开始
             assignment.setAssignTime(DateUtils.getNowDate());
-            assignment.setPriority((int) (es.getScore() * 10));
             
             assignmentMapper.insertAssignment(assignment);
             result.add(assignment.getAssignId());
@@ -308,7 +308,9 @@ public class WorkAssignmentServiceImpl implements IWorkAssignmentService
         double score = 0.0;
         
         // 1. 负载分 (0-40 分)：负载越低分数越高
-        double loadRatio = employee.getCurrentWorkload() / employee.getMaxWorkload();
+        BigDecimal currentWorkload = employee.getCurrentWorkload() != null ? employee.getCurrentWorkload() : BigDecimal.ZERO;
+        BigDecimal maxWorkload = employee.getMaxWorkload() != null ? employee.getMaxWorkload() : BigDecimal.ONE;
+        double loadRatio = currentWorkload.divide(maxWorkload, 4, BigDecimal.ROUND_HALF_UP).doubleValue();
         double loadScore = (1 - loadRatio) * 40;
         score += loadScore;
         

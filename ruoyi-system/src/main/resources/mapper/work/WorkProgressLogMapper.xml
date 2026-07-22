@@ -17,11 +17,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="createTime"    column="create_time"     />
 		<result property="updateBy"      column="update_by"       />
 		<result property="updateTime"    column="update_time"     />
+		<result property="delFlag"       column="del_flag"        />
 	</resultMap>
 	
 	<sql id="selectProgressLogVo">
         select log_id, job_stage_id, employee_id, progress, prev_progress, 
-               workload, content, remark, create_by, create_time, update_by, update_time 
+               workload, content, remark, create_by, create_time, update_by, update_time, del_flag 
 		from work_progress_log
     </sql>
 	

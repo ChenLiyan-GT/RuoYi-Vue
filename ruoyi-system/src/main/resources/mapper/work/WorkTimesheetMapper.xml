@@ -21,72 +21,78 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="updateBy"      column="update_by"       />
 		<result property="updateTime"    column="update_time"     />
 		<result property="remark"        column="remark"          />
+		<result property="delFlag"       column="del_flag"        />
 	</resultMap>
 	
 	<sql id="selectTimesheetVo">
-        select timesheet_id, assign_id, work_date, workload, content, status, 
-               submit_by, submit_time, audit_by, audit_time, audit_comment, 
-               create_by, create_time, update_by, update_time, remark 
-		from work_timesheet
+        select t.timesheet_id, t.assign_id, t.work_date, t.workload, t.content, t.status, 
+               t.submit_by, t.submit_time, t.audit_by, t.audit_time, t.audit_comment, 
+               t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+               j.job_no, j.job_name, s.stage_name, e.employee_name
+		from work_timesheet t
+		left join work_assignment a on t.assign_id = a.assign_id
+		left join work_job_stage s on a.job_stage_id = s.job_stage_id
+		left join work_job j on s.job_id = j.job_id
+		left join work_employee e on a.employee_id = e.employee_id
     </sql>
 	
 	<select id="selectTimesheetList" parameterType="WorkTimesheet" resultMap="WorkTimesheetResult">
 	    <include refid="selectTimesheetVo"/>
 		<where>
 			<if test="delFlag == null or delFlag == '' or delFlag == '0'">
-				AND del_flag = '0'
+				AND t.del_flag = '0'
 			</if>
 			<if test="assignId != null">
-				AND assign_id = #{assignId}
+				AND t.assign_id = #{assignId}
 			</if>
 			<if test="employeeId != null">
-				AND submit_by = #{employeeId}
+				AND e.employee_id = #{employeeId}
 			</if>
 			<if test="status != null and status != ''">
-				AND status = #{status}
+				AND t.status = #{status}
 			</if>
 			<if test="startDate != null">
-				AND work_date >= #{startDate}
+				AND t.work_date <![CDATA[ >= ]]> #{startDate}
 			</if>
 			<if test="endDate != null">
-				AND work_date <= #{endDate}
+				AND t.work_date <![CDATA[ <= ]]> #{endDate}
 			</if>
 		</where>
-		order by work_date desc, create_time desc
+		order by t.work_date desc, t.create_time desc
 	</select>
 	
 	<select id="selectTimesheetsByAssignId" parameterType="Long" resultMap="WorkTimesheetResult">
 		<include refid="selectTimesheetVo"/>
-		where assign_id = #{assignId} and del_flag = '0'
-		order by work_date desc
+		where t.assign_id = #{assignId} and t.del_flag = '0'
+		order by t.work_date desc
 	</select>
 	
 	<select id="selectTimesheetsByEmployeeId" parameterType="Long" resultMap="WorkTimesheetResult">
 		<include refid="selectTimesheetVo"/>
-		where submit_by = #{employeeId} and del_flag = '0'
-		order by work_date desc
+		where e.employee_id = #{employeeId} and t.del_flag = '0'
+		order by t.work_date desc
 	</select>
 	
 	<select id="selectTimesheetById" parameterType="Long" resultMap="WorkTimesheetResult">
 		<include refid="selectTimesheetVo"/>
-		where timesheet_id = #{timesheetId} and del_flag = '0'
+		where t.timesheet_id = #{timesheetId} and t.del_flag = '0'
 	</select>
 	
 	<select id="selectTimesheetsByDateRange" resultMap="WorkTimesheetResult">
 		<include refid="selectTimesheetVo"/>
-		where submit_by = #{param1} 
-		and work_date >= #{param2} 
-		and work_date <= #{param3}
-		and del_flag = '0'
-		order by work_date desc
+		where e.employee_id = #{param1} 
+		and t.work_date <![CDATA[ >= ]]> #{param2} 
+		and t.work_date <![CDATA[ <= ]]> #{param3}
+		and t.del_flag = '0'
+		order by t.work_date desc
 	</select>
 	
- 	<delete id="deleteTimesheetByIds" parameterType="Long">
+ 	<update id="deleteTimesheetByIds" parameterType="Long">
  		update work_timesheet set del_flag = '2' where timesheet_id in
  		<foreach collection="array" item="timesheetId" open="(" separator="," close=")">
  			#{timesheetId}
         </foreach>
- 	</delete>
+ 	</update>
  	
  	<update id="updateTimesheet" parameterType="WorkTimesheet">
  		update work_timesheet
@@ -139,16 +145,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</insert>
 	
 	<select id="sumWorkloadByDateRange" resultType="java.lang.Double">
-		select coalesce(sum(workload), 0) from work_timesheet 
-		where submit_by = #{param1} 
-		and work_date >= #{param2} 
-		and work_date <= #{param3}
-		and del_flag = '0' and status = '1'
+		select coalesce(sum(t.workload), 0) from work_timesheet t
+		left join work_assignment a on t.assign_id = a.assign_id
+		left join work_employee e on a.employee_id = e.employee_id
+		where e.employee_id = #{param1} 
+		and t.work_date <![CDATA[ >= ]]> #{param2} 
+		and t.work_date <![CDATA[ <= ]]> #{param3}
+		and t.del_flag = '0' and t.status = '1'
 	</select>
 	
 	<select id="sumWorkloadByAssignId" parameterType="Long" resultType="java.lang.Double">
-		select coalesce(sum(workload), 0) from work_timesheet 
-		where assign_id = #{assignId} and del_flag = '0' and status = '1'
+		select coalesce(sum(t.workload), 0) from work_timesheet t
+		left join work_assignment a on t.assign_id = a.assign_id
+		left join work_employee e on a.employee_id = e.employee_id
+		where t.assign_id = #{assignId} and t.del_flag = '0' and t.status = '1'
 	</select>
 
 </mapper>
