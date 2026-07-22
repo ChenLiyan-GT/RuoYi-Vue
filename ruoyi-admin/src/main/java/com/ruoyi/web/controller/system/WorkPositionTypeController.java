@@ -77,10 +77,8 @@ public class WorkPositionTypeController extends BaseController
     @ResponseBody
     public AjaxResult addSave(@Validated WorkPositionType workPositionType)
     {
-        if (!positionTypeService.checkTypeCodeUnique(workPositionType))
-        {
-            return error("新增职能类型'" + workPositionType.getTypeName() + "'失败，类型编码已存在");
-        }
+        workPositionType.setCreateBy(getLoginName());
+        workPositionType.setUpdateBy(getLoginName());
         return toAjax(positionTypeService.insertPositionType(workPositionType));
     }
 
@@ -104,10 +102,7 @@ public class WorkPositionTypeController extends BaseController
     @ResponseBody
     public AjaxResult editSave(@Validated WorkPositionType workPositionType)
     {
-        if (!positionTypeService.checkTypeCodeUnique(workPositionType))
-        {
-            return error("修改职能类型'" + workPositionType.getTypeName() + "'失败，类型编码已存在");
-        }
+        workPositionType.setUpdateBy(getLoginName());
         return toAjax(positionTypeService.updatePositionType(workPositionType));
     }
 
@@ -124,7 +119,7 @@ public class WorkPositionTypeController extends BaseController
     }
 
     /**
-     * 校验职能类型编码
+     * 校验职能类型编码是否唯一
      */
     @PostMapping("/checkTypeCodeUnique")
     @ResponseBody

@@ -34,14 +34,6 @@ public interface IWorkPositionTypeService
     public WorkPositionType selectPositionTypeById(Long typeId);
 
     /**
-     * 根据类型编码查询职能类型信息
-     * 
-     * @param typeCode 类型编码
-     * @return 职能类型对象信息
-     */
-    public WorkPositionType checkTypeCodeUnique(String typeCode);
-
-    /**
      * 批量删除职能类型信息
      * 
      * @param ids 需要删除的数据 ID

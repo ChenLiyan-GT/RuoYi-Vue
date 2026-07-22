@@ -55,12 +55,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		where type_code = #{typeCode} limit 1
 	</select>
 	
- 	<update id="deletePositionTypeByIds" parameterType="Long">
- 		update work_position_type set del_flag = '2' where type_id in
+ 	<delete id="deletePositionTypeByIds" parameterType="Long">
+ 		delete from work_position_type where type_id in
  		<foreach collection="array" item="typeId" open="(" separator="," close=")">
  			#{typeId}
         </foreach>
- 	</update>
+ 	</delete>
  	
  	<update id="updatePositionType" parameterType="WorkPositionType">
  		update work_position_type
@@ -78,7 +78,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  	
  	<insert id="insertPositionType" parameterType="WorkPositionType" useGeneratedKeys="true" keyProperty="typeId">
  		insert into work_position_type(
- 			<if test="typeId != null and typeId != 0">type_id,</if>
  			<if test="typeCode != null and typeCode != ''">type_code,</if>
  			<if test="typeName != null and typeName != ''">type_name,</if>
  			<if test="sortOrder != null">sort_order,</if>
@@ -87,7 +86,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="remark != null and remark != ''">remark,</if>
  			create_time
  		)values(
- 			<if test="typeId != null and typeId != 0">#{typeId},</if>
  			<if test="typeCode != null and typeCode != ''">#{typeCode},</if>
  			<if test="typeName != null and typeName != ''">#{typeName},</if>
  			<if test="sortOrder != null">#{sortOrder},</if>

@@ -86,6 +86,7 @@
         function submitHandler() {
             if ($.validate.form()) {
                 var data = $("#form-positionType-edit").serializeArray();
+                data = data.filter(function(item) { return item.name !== 'status'; });
                 data.push({name: "status", value: $("#status").is(":checked") ? "0" : "1"});
                 $.operate.save(prefix + "/edit", data);
             }

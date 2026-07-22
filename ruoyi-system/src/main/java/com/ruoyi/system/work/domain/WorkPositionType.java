@@ -34,9 +34,6 @@ public class WorkPositionType extends BaseEntity
     @Excel(name = "状态", readConverterExp = "0=正常，1=停用")
     private String status;
 
-    /** 删除标志 */
-    private String delFlag;
-
     public Long getTypeId()
     {
         return typeId;
@@ -87,16 +84,6 @@ public class WorkPositionType extends BaseEntity
         this.status = status;
     }
 
-    public String getDelFlag()
-    {
-        return delFlag;
-    }
-
-    public void setDelFlag(String delFlag)
-    {
-        this.delFlag = delFlag;
-    }
-
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -107,7 +94,6 @@ public class WorkPositionType extends BaseEntity
             .append("status", getStatus())
             .append("createTime", getCreateTime())
             .append("updateTime", getUpdateTime())
-            .append("delFlag", getDelFlag())
             .toString();
     }
 }

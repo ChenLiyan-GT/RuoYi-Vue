@@ -58,18 +58,6 @@ public class WorkPositionTypeServiceImpl implements IWorkPositionTypeService
     }
 
     /**
-     * 根据类型编码查询职能类型信息
-     * 
-     * @param typeCode 类型编码
-     * @return 职能类型对象信息
-     */
-    @Override
-    public WorkPositionType checkTypeCodeUnique(String typeCode)
-    {
-        return positionTypeMapper.checkTypeCodeUnique(typeCode);
-    }
-
-    /**
      * 批量删除职能类型信息
      * 
      * @param ids 需要删除的数据 ID
@@ -78,6 +66,10 @@ public class WorkPositionTypeServiceImpl implements IWorkPositionTypeService
     @Override
     public int deletePositionTypeByIds(String ids)
     {
+        if (StringUtils.isEmpty(ids))
+        {
+            throw new ServiceException("删除参数不能为空");
+        }
         Long[] typeIds = Convert.toLongArray(ids);
         return positionTypeMapper.deletePositionTypeByIds(typeIds);
     }
