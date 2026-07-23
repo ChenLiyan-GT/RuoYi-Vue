@@ -72,8 +72,8 @@
                 success: function(result) {
                     if (result.code == 0) {
                         var options = '<option value="">---请选择---</option>';
-                        $.each(result.rows, function(i, item) {
-                            options += '<option value="' + item.positionTypeId + '">' + item.positionTypeName + '</option>';
+                        $.each(result.data, function(i, item) {
+                            options += '<option value="' + item.typeId + '">' + item.typeName + '</option>';
                         });
                         $("select[name='positionTypeId']").html(options);
                     }
@@ -94,7 +94,7 @@
                 title: '规则 ID',
                 visible: false
             }, {
-                field: 'positionTypeName',
+                field: 'typeName',
                 title: '职能类型'
             }, {
                 field: 'level',
@@ -116,13 +116,13 @@
                 }
             }, {
                 field: 'description',
-                title: '描述',
-                width: '25%'
+                title: '描述'
             }, {
                 field: 'status',
                 title: '状态',
                 formatter: function(value, row, index) {
-                    return $.table.selectDictLabel($.table.selectDictList('sys_normal_disable'), value);
+                    var dict = [{dictValue: '0', dictLabel: '正常'}, {dictValue: '1', dictLabel: '停用'}];
+                    return $.table.selectDictLabel(dict, value);
                 }
             }, {
                 title: '操作',

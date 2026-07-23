@@ -94,9 +94,9 @@
                 success: function(result) {
                     if (result.code == 0) {
                         var options = '<option value="">---请选择---</option>';
-                        $.each(result.rows, function(i, item) {
-                            var selected = item.positionTypeId == [[${levelRule.positionTypeId}]] ? 'selected' : '';
-                            options += '<option value="' + item.positionTypeId + '" ' + selected + '>' + item.positionTypeName + '</option>';
+                        $.each(result.data, function(i, item) {
+                            var selected = item.typeId == [[${levelRule.positionTypeId}]] ? 'selected' : '';
+                            options += '<option value="' + item.typeId + '" ' + selected + '>' + item.typeName + '</option>';
                         });
                         $("#positionTypeId").html(options);
                     }
@@ -151,6 +151,7 @@
         function submitHandler() {
             if ($.validate.form()) {
                 var data = $("#form-levelRule-edit").serializeArray();
+                data = data.filter(function(item) { return item.name !== 'status'; });
                 data.push({name: "status", value: $("#status").is(":checked") ? "0" : "1"});
                 $.operate.save(prefix + "/edit", data);
             }

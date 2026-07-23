@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.text.Convert;
-import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.work.domain.WorkLevelRule;
 import com.ruoyi.system.work.mapper.WorkLevelRuleMapper;
@@ -64,9 +63,9 @@ public class WorkLevelRuleServiceImpl implements IWorkLevelRuleService
      * @return 级别规则对象信息
      */
     @Override
-    public WorkLevelRule checkLevelUnique(Integer level)
+    public WorkLevelRule selectLevelRuleByLevel(Integer level)
     {
-        return levelRuleMapper.checkLevelUnique(level);
+        return levelRuleMapper.selectLevelRuleByLevel(level);
     }
 
     /**
@@ -91,11 +90,6 @@ public class WorkLevelRuleServiceImpl implements IWorkLevelRuleService
     @Override
     public int insertLevelRule(WorkLevelRule workLevelRule)
     {
-        // 校验职级唯一性
-        if (!checkLevelUnique(workLevelRule))
-        {
-            throw new ServiceException("新增级别规则失败，职级 P" + workLevelRule.getLevel() + "已存在");
-        }
         return levelRuleMapper.insertLevelRule(workLevelRule);
     }
 
@@ -108,11 +102,6 @@ public class WorkLevelRuleServiceImpl implements IWorkLevelRuleService
     @Override
     public int updateLevelRule(WorkLevelRule workLevelRule)
     {
-        // 校验职级唯一性
-        if (!checkLevelUnique(workLevelRule))
-        {
-            throw new ServiceException("修改级别规则失败，职级 P" + workLevelRule.getLevel() + "已存在");
-        }
         return levelRuleMapper.updateLevelRule(workLevelRule);
     }
 
@@ -123,10 +112,10 @@ public class WorkLevelRuleServiceImpl implements IWorkLevelRuleService
      * @return 结果
      */
     @Override
-    public boolean checkLevelUnique(WorkLevelRule workLevelRule)
+    public boolean isLevelUnique(WorkLevelRule workLevelRule)
     {
         Long ruleId = StringUtils.isNull(workLevelRule.getRuleId()) ? -1L : workLevelRule.getRuleId();
-        WorkLevelRule info = levelRuleMapper.checkLevelUnique(workLevelRule.getLevel());
+        WorkLevelRule info = levelRuleMapper.selectLevelRuleByTypeAndLevel(workLevelRule);
         if (StringUtils.isNotNull(info) && info.getRuleId().longValue() != ruleId.longValue())
         {
             return UserConstants.NOT_UNIQUE;
@@ -143,7 +132,28 @@ public class WorkLevelRuleServiceImpl implements IWorkLevelRuleService
     @Override
     public String getStageRangeByLevel(Integer level)
     {
-        WorkLevelRule rule = levelRuleMapper.checkLevelUnique(level);
+        WorkLevelRule rule = levelRuleMapper.selectLevelRuleByLevel(level);
+        if (rule == null)
+        {
+            return "未知职级";
+        }
+        return rule.getMinStage() + " ~ " + rule.getMaxStage();
+    }
+
+    /**
+     * 根据职能类型 ID 和职级获取可执行的作业阶段范围
+     * 
+     * @param positionTypeId 职能类型 ID
+     * @param level 职级
+     * @return 阶段范围描述
+     */
+    @Override
+    public String getStageRangeByTypeAndLevel(Long positionTypeId, Integer level)
+    {
+        WorkLevelRule query = new WorkLevelRule();
+        query.setPositionTypeId(positionTypeId);
+        query.setLevel(level);
+        WorkLevelRule rule = levelRuleMapper.selectLevelRuleByTypeAndLevel(query);
         if (rule == null)
         {
             return "未知职级";

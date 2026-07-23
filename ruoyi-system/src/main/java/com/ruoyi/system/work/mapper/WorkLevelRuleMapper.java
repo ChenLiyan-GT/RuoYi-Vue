@@ -39,7 +39,15 @@ public interface WorkLevelRuleMapper
      * @param level 职级
      * @return 级别规则对象信息
      */
-    public WorkLevelRule checkLevelUnique(Integer level);
+    public WorkLevelRule selectLevelRuleByLevel(Integer level);
+
+    /**
+     * 根据职能类型 ID 和职级查询级别规则（用于唯一性校验）
+     * 
+     * @param workLevelRule 级别规则信息（含 positionTypeId 和 level）
+     * @return 级别规则对象信息
+     */
+    public WorkLevelRule selectLevelRuleByTypeAndLevel(WorkLevelRule workLevelRule);
 
     /**
      * 批量删除级别规则信息

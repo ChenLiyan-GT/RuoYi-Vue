@@ -45,6 +45,7 @@ public class WorkPositionTypeController extends BaseController
     @ResponseBody
     public TableDataInfo list(WorkPositionType workPositionType)
     {
+        startPage();
         List<WorkPositionType> list = positionTypeService.selectPositionTypeList(workPositionType);
         return getDataTable(list);
     }
@@ -110,7 +111,7 @@ public class WorkPositionTypeController extends BaseController
      * 查询所有职能类型列表
      */
     @RequiresPermissions("system:work:positionType:list")
-    @GetMapping("/list/all")
+    @GetMapping("/listAll")
     @ResponseBody
     public AjaxResult listAll()
     {

@@ -45,6 +45,7 @@ public class WorkLevelRuleController extends BaseController
     @ResponseBody
     public TableDataInfo list(WorkLevelRule workLevelRule)
     {
+        startPage();
         List<WorkLevelRule> list = levelRuleService.selectLevelRuleList(workLevelRule);
         return getDataTable(list);
     }
@@ -77,10 +78,12 @@ public class WorkLevelRuleController extends BaseController
     @ResponseBody
     public AjaxResult addSave(@Validated WorkLevelRule workLevelRule)
     {
-        if (!levelRuleService.checkLevelUnique(workLevelRule))
+        if (!levelRuleService.isLevelUnique(workLevelRule))
         {
             return error("新增级别规则失败，职级 P" + workLevelRule.getLevel() + "已存在");
         }
+        workLevelRule.setCreateBy(getLoginName());
+        workLevelRule.setUpdateBy(getLoginName());
         return toAjax(levelRuleService.insertLevelRule(workLevelRule));
     }
 
@@ -104,10 +107,11 @@ public class WorkLevelRuleController extends BaseController
     @ResponseBody
     public AjaxResult editSave(@Validated WorkLevelRule workLevelRule)
     {
-        if (!levelRuleService.checkLevelUnique(workLevelRule))
+        if (!levelRuleService.isLevelUnique(workLevelRule))
         {
             return error("修改级别规则失败，职级 P" + workLevelRule.getLevel() + "已存在");
         }
+        workLevelRule.setUpdateBy(getLoginName());
         return toAjax(levelRuleService.updateLevelRule(workLevelRule));
     }
 
@@ -115,7 +119,7 @@ public class WorkLevelRuleController extends BaseController
      * 查询所有级别规则列表
      */
     @RequiresPermissions("system:work:levelRule:list")
-    @GetMapping("/list/all")
+    @GetMapping("/listAll")
     @ResponseBody
     public AjaxResult listAll()
     {
@@ -142,6 +146,6 @@ public class WorkLevelRuleController extends BaseController
     @ResponseBody
     public boolean checkLevelUnique(WorkLevelRule workLevelRule)
     {
-        return levelRuleService.checkLevelUnique(workLevelRule);
+        return levelRuleService.isLevelUnique(workLevelRule);
     }
 }

@@ -39,7 +39,7 @@ public interface IWorkLevelRuleService
      * @param level 职级
      * @return 级别规则对象信息
      */
-    public WorkLevelRule checkLevelUnique(Integer level);
+    public WorkLevelRule selectLevelRuleByLevel(Integer level);
 
     /**
      * 批量删除级别规则信息
@@ -71,7 +71,7 @@ public interface IWorkLevelRuleService
      * @param workLevelRule 级别规则信息
      * @return 结果
      */
-    public boolean checkLevelUnique(WorkLevelRule workLevelRule);
+    public boolean isLevelUnique(WorkLevelRule workLevelRule);
 
     /**
      * 根据职级获取可执行的作业阶段范围
@@ -80,4 +80,13 @@ public interface IWorkLevelRuleService
      * @return 阶段范围描述
      */
     public String getStageRangeByLevel(Integer level);
+
+    /**
+     * 根据职能类型 ID 和职级获取可执行的作业阶段范围
+     * 
+     * @param positionTypeId 职能类型 ID
+     * @param level 职级
+     * @return 阶段范围描述
+     */
+    public String getStageRangeByTypeAndLevel(Long positionTypeId, Integer level);
 }

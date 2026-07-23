@@ -84,6 +84,13 @@
                     $("#maxStage").val(minStage);
                 }
             });
+            $("#form-levelRule-add").on("change", "#maxStage", function() {
+                var maxStage = parseInt($(this).val());
+                var minStage = parseInt($("#minStage").val());
+                if (minStage > maxStage) {
+                    $("#minStage").val(maxStage);
+                }
+            });
         });
 
         function loadPositionTypes() {
@@ -93,8 +100,8 @@
                 success: function(result) {
                     if (result.code == 0) {
                         var options = '<option value="">---请选择---</option>';
-                        $.each(result.rows, function(i, item) {
-                            options += '<option value="' + item.positionTypeId + '">' + item.positionTypeName + '</option>';
+                        $.each(result.data, function(i, item) {
+                            options += '<option value="' + item.typeId + '">' + item.typeName + '</option>';
                         });
                         $("#positionTypeId").html(options);
                     }
@@ -149,6 +156,7 @@
         function submitHandler() {
             if ($.validate.form()) {
                 var data = $("#form-levelRule-add").serializeArray();
+                data = data.filter(function(item) { return item.name !== 'status'; });
                 data.push({name: "status", value: $("#status").is(":checked") ? "0" : "1"});
                 $.operate.save(prefix + "/add", data);
             }

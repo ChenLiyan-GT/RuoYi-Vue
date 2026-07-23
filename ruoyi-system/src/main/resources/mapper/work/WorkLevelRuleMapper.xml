@@ -5,33 +5,44 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.ruoyi.system.work.mapper.WorkLevelRuleMapper">
 
 	<resultMap type="WorkLevelRule" id="WorkLevelRuleResult">
-		<id     property="ruleId"        column="rule_id"       />
-		<result property="level"         column="level"         />
-		<result property="levelName"     column="level_name"    />
-		<result property="minStage"      column="min_stage"     />
-		<result property="maxStage"      column="max_stage"     />
-		<result property="description"   column="description"   />
-		<result property="delFlag"       column="del_flag"      />
-		<result property="createBy"      column="create_by"     />
-		<result property="createTime"    column="create_time"   />
-		<result property="updateBy"      column="update_by"     />
-		<result property="updateTime"    column="update_time"   />
-		<result property="remark"        column="remark"        />
+		<id     property="ruleId"         column="rule_id"          />
+		<result property="positionTypeId" column="position_type_id" />
+		<result property="typeName"       column="type_name"        />
+		<result property="level"          column="level"            />
+		<result property="levelName"      column="level_name"       />
+		<result property="minStage"       column="min_stage"        />
+		<result property="maxStage"       column="max_stage"        />
+		<result property="description"    column="description"      />
+		<result property="status"         column="status"           />
+		<result property="delFlag"        column="del_flag"         />
+		<result property="createBy"       column="create_by"        />
+		<result property="createTime"     column="create_time"      />
+		<result property="updateBy"       column="update_by"        />
+		<result property="updateTime"     column="update_time"      />
+		<result property="remark"         column="remark"           />
 	</resultMap>
 	
 	<sql id="selectLevelRuleVo">
-        select rule_id, level, level_name, min_stage, max_stage, description, del_flag, create_by, create_time, update_by, update_time, remark 
-		from work_level_rule
+        select r.rule_id, r.position_type_id, r.level, r.level_name, r.min_stage, r.max_stage, r.description,
+		r.status, r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark, t.type_name
+		from work_level_rule r 
+		left join work_position_type t on r.position_type_id = t.type_id
     </sql>
 	
 	<select id="selectLevelRuleList" parameterType="WorkLevelRule" resultMap="WorkLevelRuleResult">
 	    <include refid="selectLevelRuleVo"/>
 		<where>
+			<if test="positionTypeId != null">
+				AND position_type_id = #{positionTypeId}
+			</if>
 			<if test="level != null">
 				AND level = #{level}
 			</if>
 			<if test="levelName != null and levelName != ''">
 				AND level_name like concat('%', #{levelName}, '%')
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
 			</if>
 		</where>
 		order by level asc
@@ -48,55 +59,66 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		where rule_id = #{ruleId}
 	</select>
 	
-	<select id="checkLevelUnique" parameterType="Integer" resultMap="WorkLevelRuleResult">
+	<select id="selectLevelRuleByLevel" parameterType="Integer" resultMap="WorkLevelRuleResult">
 		<include refid="selectLevelRuleVo"/>
 		where level = #{level} limit 1
 	</select>
 	
- 	<update id="deleteLevelRuleByIds" parameterType="Long">
- 		update work_level_rule set del_flag = '2' where rule_id in
- 		<foreach collection="array" item="ruleId" open="(" separator="," close=")">
- 			#{ruleId}
+	<select id="selectLevelRuleByTypeAndLevel" parameterType="WorkLevelRule" resultMap="WorkLevelRuleResult">
+		<include refid="selectLevelRuleVo"/>
+		where position_type_id = #{positionTypeId} and level = #{level} limit 1
+	</select>
+	
+ 	<delete id="deleteLevelRuleByIds" parameterType="Long">
+  		delete from work_level_rule where rule_id in
+  		<foreach collection="array" item="ruleId" open="(" separator="," close=")">
+  			#{ruleId}
         </foreach>
+ 	</delete>
+  	
+  	<update id="updateLevelRule" parameterType="WorkLevelRule">
+  		update work_level_rule
+  		<set>
+  			<if test="positionTypeId != null">position_type_id = #{positionTypeId},</if>
+  			<if test="level != null">level = #{level},</if>
+  			<if test="levelName != null and levelName != ''">level_name = #{levelName},</if>
+  			<if test="minStage != null and minStage != ''">min_stage = #{minStage},</if>
+  			<if test="maxStage != null and maxStage != ''">max_stage = #{maxStage},</if>
+  			<if test="description != null">description = #{description},</if>
+  			<if test="status != null">status = #{status},</if>
+  			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+  			<if test="remark != null">remark = #{remark},</if>
+  			update_time = sysdate()
+  		</set>
+  		where rule_id = #{ruleId}
  	</update>
- 	
- 	<update id="updateLevelRule" parameterType="WorkLevelRule">
- 		update work_level_rule
- 		<set>
- 			<if test="level != null">level = #{level},</if>
- 			<if test="levelName != null and levelName != ''">level_name = #{levelName},</if>
- 			<if test="minStage != null and minStage != ''">min_stage = #{minStage},</if>
- 			<if test="maxStage != null and maxStage != ''">max_stage = #{maxStage},</if>
- 			<if test="description != null">description = #{description},</if>
- 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
- 			<if test="remark != null">remark = #{remark},</if>
- 			update_time = sysdate()
- 		</set>
- 		where rule_id = #{ruleId}
-	</update>
- 	
- 	<insert id="insertLevelRule" parameterType="WorkLevelRule" useGeneratedKeys="true" keyProperty="ruleId">
- 		insert into work_level_rule(
- 			<if test="ruleId != null and ruleId != 0">rule_id,</if>
- 			<if test="level != null">level,</if>
- 			<if test="levelName != null and levelName != ''">level_name,</if>
- 			<if test="minStage != null and minStage != ''">min_stage,</if>
- 			<if test="maxStage != null and maxStage != ''">max_stage,</if>
- 			<if test="description != null and description != ''">description,</if>
- 			<if test="createBy != null and createBy != ''">create_by,</if>
- 			<if test="remark != null and remark != ''">remark,</if>
- 			create_time
- 		)values(
- 			<if test="ruleId != null and ruleId != 0">#{ruleId},</if>
- 			<if test="level != null">#{level},</if>
- 			<if test="levelName != null and levelName != ''">#{levelName},</if>
- 			<if test="minStage != null and minStage != ''">#{minStage},</if>
- 			<if test="maxStage != null and maxStage != ''">#{maxStage},</if>
- 			<if test="description != null and description != ''">#{description},</if>
- 			<if test="createBy != null and createBy != ''">#{createBy},</if>
- 			<if test="remark != null and remark != ''">#{remark},</if>
- 			sysdate()
- 		)
-	</insert>
+  	
+  	<insert id="insertLevelRule" parameterType="WorkLevelRule" useGeneratedKeys="true" keyProperty="ruleId">
+  		insert into work_level_rule(
+  			<if test="ruleId != null and ruleId != 0">rule_id,</if>
+  			<if test="positionTypeId != null">position_type_id,</if>
+  			<if test="level != null">level,</if>
+  			<if test="levelName != null and levelName != ''">level_name,</if>
+  			<if test="minStage != null and minStage != ''">min_stage,</if>
+  			<if test="maxStage != null and maxStage != ''">max_stage,</if>
+  			<if test="description != null and description != ''">description,</if>
+  			<if test="status != null and status != ''">status,</if>
+  			<if test="createBy != null and createBy != ''">create_by,</if>
+  			<if test="remark != null and remark != ''">remark,</if>
+  			create_time
+  		)values(
+  			<if test="ruleId != null and ruleId != 0">#{ruleId},</if>
+  			<if test="positionTypeId != null">#{positionTypeId},</if>
+  			<if test="level != null">#{level},</if>
+  			<if test="levelName != null and levelName != ''">#{levelName},</if>
+  			<if test="minStage != null and minStage != ''">#{minStage},</if>
+  			<if test="maxStage != null and maxStage != ''">#{maxStage},</if>
+  			<if test="description != null and description != ''">#{description},</if>
+  			<if test="status != null and status != ''">#{status},</if>
+  			<if test="createBy != null and createBy != ''">#{createBy},</if>
+  			<if test="remark != null and remark != ''">#{remark},</if>
+  			sysdate()
+  		)
+ 	</insert>
 
-</mapper>
+ </mapper>
