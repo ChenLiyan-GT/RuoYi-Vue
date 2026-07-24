@@ -35,7 +35,7 @@ public class WorkStageTemplateController extends BaseController
 
     @RequiresPermissions("system:work:stageTemplate:view")
     @GetMapping()
-    public String operlog()
+    public String stageTemplate()
     {
         return prefix + "/stageTemplate";
     }

@@ -85,6 +85,7 @@
         var addFlag = [[${@permission.hasPermi('system:work:stageTemplate:add')}]];
         var editFlag = [[${@permission.hasPermi('system:work:stageTemplate:edit')}]];
         var removeFlag = [[${@permission.hasPermi('system:work:stageTemplate:remove')}]];
+        var datas = [[${@dict.getType('sys_normal_disable')}]];
 
         var stageNames = ['需求分析', '基本设计', '内部设计', '开发', '单体测试', '结合测试', '综合测试', '上线'];
         var stageRatios = [5, 10, 10, 40, 15, 10, 5, 5]; // 默认工时占比
@@ -96,15 +97,22 @@
         function loadDepts() {
             $.ajax({
                 url: ctx + "system/dept/list",
-                type: "get",
+                type: "post",
                 success: function(result) {
-                    if (result.code == 0) {
-                        var options = '<option value="">---请选择---</option>';
-                        $.each(result.rows, function(i, item) {
-                            options += '<option value="' + item.deptId + '">' + item.deptName + '</option>';
-                        });
-                        $("select[name='deptId']").html(options);
-                    }
+                    var options = '<option value="">---请选择---</option>';
+                    // 构建部门名 -> 上级部门名 的映射
+                    var deptMap = {};
+                    $.each(result, function(i, item) {
+                        deptMap[item.deptId] = item;
+                    });
+                    $.each(result, function(i, item) {
+                        var label = item.deptName;
+                        if (item.parentId && deptMap[item.parentId]) {
+                            label = deptMap[item.parentId].deptName + '-' + label;
+                        }
+                        options += '<option value="' + item.deptId + '">' + label + '</option>';
+                    });
+                    $("select[name='deptId']").html(options);
                 }
             });
         }
@@ -129,7 +137,7 @@
                 field: 'deptName',
                 title: '适用部门'
             }, {
-                field: 'stageConfig',
+                field: 'stagesConfig',
                 title: '阶段配置',
                 width: '35%',
                 formatter: function(value, row, index) {
@@ -138,7 +146,7 @@
                         var stages = JSON.parse(value);
                         var html = '';
                         $.each(stages, function(i, stage) {
-                            html += '<span class="badge badge-info" style="margin:2px;">' + stage.stageName + '(' + stage.ratio + '%)</span> ';
+                            html += '<span class="badge badge-info" style="margin:2px;">' + stage.stage_name + '(' + Math.round(stage.workload_ratio * 100) + '%)</span> ';
                         });
                         return html;
                     } catch(e) {
@@ -155,7 +163,7 @@
                 field: 'status',
                 title: '状态',
                 formatter: function(value, row, index) {
-                    return $.table.selectDictLabel($.table.selectDictList('sys_normal_disable'), value);
+                    return $.table.selectDictLabel(datas, value);
                 }
             }, {
                 title: '操作',
@@ -163,7 +171,7 @@
                 formatter: function(value, row, index) {
                     var actions = [];
                     actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.templateId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
-                    actions.push('<a class="btn btn-info btn-xs" href="javascript:void(0)" onclick="configStages(\'' + row.templateId + '\', \'' + row.stageConfig + '\')"><i class="fa fa-cog"></i>配置</a> ');
+                    actions.push('<a class="btn btn-info btn-xs" href="javascript:void(0)" onclick="configStages(\'' + row.templateId + '\', \'' + row.stagesConfig + '\')"><i class="fa fa-cog"></i>配置</a> ');
                     actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.templateId + '\')"><i class="fa fa-remove"></i>删除</a> ');
                     return actions.join('');
                 }

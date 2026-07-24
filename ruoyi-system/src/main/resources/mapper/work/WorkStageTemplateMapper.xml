@@ -8,6 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<id     property="templateId"        column="template_id"       />
 		<result property="templateName"      column="template_name"     />
 		<result property="deptId"            column="dept_id"           />
+		<result property="deptName"          column="dept_name"         />
 		<result property="stagesConfig"      column="stages_config"     />
 		<result property="isDefault"         column="is_default"        />
 		<result property="version"           column="version"           />
@@ -22,59 +23,60 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</resultMap>
 	
 	<sql id="selectStageTemplateVo">
-        select template_id, template_name, dept_id, stages_config, is_default, 
-               version, usage_count, status, create_by, create_time, update_by, update_time,
-               remark, del_flag 
-		from work_stage_template
+        select t.template_id, t.template_name, t.dept_id, t.stages_config, t.is_default, 
+               t.version, t.usage_count, t.status, t.create_by, t.create_time, t.update_by, t.update_time,
+               t.remark, t.del_flag,
+               (select d.dept_name from sys_dept d where d.dept_id = t.dept_id) as dept_name
+		from work_stage_template t
     </sql>
 	
 	<select id="selectStageTemplateList" parameterType="WorkStageTemplate" resultMap="WorkStageTemplateResult">
 	    <include refid="selectStageTemplateVo"/>
 		<where>
 			<if test="delFlag == null or delFlag == '' or delFlag == '0'">
-				AND del_flag = '0'
+				AND t.del_flag = '0'
 			</if>
 			<if test="templateName != null and templateName != ''">
-				AND template_name like concat('%', #{templateName}, '%')
+				AND t.template_name like concat('%', #{templateName}, '%')
 			</if>
 			<if test="deptId != null">
-				AND (dept_id = #{deptId} or dept_id is null)
+				AND (t.dept_id = #{deptId} or t.dept_id is null)
 			</if>
 			<if test="isDefault != null and isDefault != ''">
-				AND is_default = #{isDefault}
+				AND t.is_default = #{isDefault}
 			</if>
 			<if test="status != null and status != ''">
-				AND status = #{status}
+				AND t.status = #{status}
 			</if>
 		</where>
-		order by is_default desc, usage_count desc, create_time desc
+		order by t.is_default desc, t.usage_count desc, t.create_time desc
 	</select>
 	
 	<select id="selectStageTemplateAll" resultMap="WorkStageTemplateResult">
 		<include refid="selectStageTemplateVo"/>
-		where del_flag = '0'
-		order by is_default desc, usage_count desc, create_time desc
+		where t.del_flag = '0'
+		order by t.is_default desc, t.usage_count desc, t.create_time desc
 	</select>
 	
 	<select id="selectStageTemplateById" parameterType="Long" resultMap="WorkStageTemplateResult">
 		<include refid="selectStageTemplateVo"/>
-		where template_id = #{templateId} and del_flag = '0'
+		where t.template_id = #{templateId} and t.del_flag = '0'
 	</select>
 	
 	<select id="selectTemplatesByDeptId" parameterType="Long" resultMap="WorkStageTemplateResult">
 		<include refid="selectStageTemplateVo"/>
-		where (dept_id = #{deptId} or dept_id is null) and del_flag = '0' and status = '0'
-		order by is_default desc, usage_count desc
+		where (t.dept_id = #{deptId} or t.dept_id is null) and t.del_flag = '0' and t.status = '0'
+		order by t.is_default desc, t.usage_count desc
 	</select>
 	
 	<select id="selectDefaultTemplate" resultMap="WorkStageTemplateResult">
 		<include refid="selectStageTemplateVo"/>
-		where is_default = '1' and status = '0' and del_flag = '0' limit 1
+		where t.is_default = '1' and t.status = '0' and t.del_flag = '0' limit 1
 	</select>
 	
 	<select id="checkTemplateNameUnique" parameterType="String" resultMap="WorkStageTemplateResult">
 		<include refid="selectStageTemplateVo"/>
-		where template_name = #{templateName} and del_flag = '0' limit 1
+		where t.template_name = #{templateName} and t.del_flag = '0' limit 1
 	</select>
 	
  	<delete id="deleteStageTemplateByIds" parameterType="Long">

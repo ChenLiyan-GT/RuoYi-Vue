@@ -41,12 +41,6 @@
                 </div>
             </div>
             <div class="form-group">
-                <label class="col-sm-3 control-label">排序：</label>
-                <div class="col-sm-8">
-                    <input class="form-control" type="number" name="sort" th:value="${stageTemplate.sort}" min="0">
-                </div>
-            </div>
-            <div class="form-group">
                 <label class="col-sm-3 control-label">状态：</label>
                 <div class="col-sm-8">
                     <label class="toggle-switch switch-solid">
@@ -71,7 +65,8 @@
         
         var stageNames = ['需求分析', '基本设计', '内部设计', '开发', '单体测试', '结合测试', '综合测试', '上线'];
         var defaultRatios = [5, 10, 10, 40, 15, 10, 5, 5];
-        var currentStageConfig = [[${stageTemplate.stageConfig}]];
+        var stageCodes = ['requirements', 'basic_design', 'detail_design', 'development', 'unit_test', 'integration_test', 'system_test', 'release'];
+        var currentStageConfig = [[${stageTemplate.stagesConfig}]];
 
         $(function() {
             loadDepts();
@@ -81,13 +76,17 @@
         function loadDepts() {
             $.ajax({
                 url: ctx + "system/dept/list",
-                type: "get",
+                type: "post",
                 success: function(result) {
-                    if (result.code == 0) {
+                    if (result) {
                         var options = '<option value="">---请选择---</option>';
-                        $.each(result.rows, function(i, item) {
+                        $.each(result, function(i, item) {
+                            var deptName = item.deptName;
+                            if (item.parentName && item.parentName != '无') {
+                                deptName = item.parentName + '-' + item.deptName;
+                            }
                             var selected = item.deptId == [[${stageTemplate.deptId}]] ? 'selected' : '';
-                            options += '<option value="' + item.deptId + '" ' + selected + '>' + item.deptName + '</option>';
+                            options += '<option value="' + item.deptId + '" ' + selected + '>' + deptName + '</option>';
                         });
                         $("#deptId").html(options);
                     }
@@ -108,15 +107,21 @@
             
             var html = '';
             for (var i = 0; i < stageNames.length; i++) {
-                var stageNo = i + 1;
                 var isChecked = false;
                 var ratio = defaultRatios[i];
                 
-                // 查找现有配置
+                // 查找现有配置（支持新旧两种格式）
                 for (var j = 0; j < stages.length; j++) {
-                    if (stages[j].stageNo == stageNo) {
+                    // 新格式：stage_code，旧格式：stageNo
+                    if ((stages[j].stage_code && stages[j].stage_code == stageCodes[i]) ||
+                        (stages[j].stageNo && stages[j].stageNo == i + 1)) {
                         isChecked = true;
-                        ratio = stages[j].ratio || defaultRatios[i];
+                        // 新格式：workload_ratio (0-1 小数)，旧格式：ratio (0-100 整数)
+                        if (stages[j].workload_ratio !== undefined) {
+                            ratio = Math.round(stages[j].workload_ratio * 100);
+                        } else if (stages[j].ratio !== undefined) {
+                            ratio = stages[j].ratio;
+                        }
                         break;
                     }
                 }
@@ -124,9 +129,9 @@
                 html += '<div class="col-sm-6" style="margin-bottom:10px;">';
                 html += '<div class="input-group">';
                 html += '<span class="input-group-addon" style="width:120px;">';
-                html += '<input type="checkbox" name="stageEnabled" value="' + stageNo + '" ' + (isChecked ? 'checked' : '') + '> ' + stageNames[i];
+                html += '<input type="checkbox" name="stageEnabled" value="' + i + '" ' + (isChecked ? 'checked' : '') + '> ' + stageNames[i];
                 html += '</span>';
-                html += '<input type="number" class="form-control ratio-input" name="stageRatio_' + stageNo + '" value="' + ratio + '" min="0" max="100" data-index="' + i + '" ' + (isChecked ? '' : 'disabled') + '>';
+                html += '<input type="number" class="form-control ratio-input" name="stageRatio_' + i + '" value="' + ratio + '" min="0" max="100" data-index="' + i + '" ' + (isChecked ? '' : 'disabled') + '>';
                 html += '<span class="input-group-addon">%</span>';
                 html += '</div>';
                 html += '</div>';
@@ -140,7 +145,7 @@
             
             // 绑定勾选变化事件
             $('input[name="stageEnabled"]').on('change', function() {
-                var index = $(this).val() - 1;
+                var index = $(this).val();
                 var ratioInput = $('input[data-index="' + index + '"]');
                 if (!$(this).is(':checked')) {
                     ratioInput.val(0).prop('disabled', true);
@@ -175,10 +180,6 @@
                 },
                 deptId: {
                     required: true
-                },
-                sort: {
-                    digits: true,
-                    min: 0
                 }
             },
             messages: {
@@ -198,22 +199,23 @@
                     return false;
                 }
                 
-                // 构建阶段配置 JSON
+                // 构建阶段配置 JSON（使用标准字段名）
                 var stages = [];
                 for (var i = 0; i < stageNames.length; i++) {
-                    var checkbox = $('input[name="stageEnabled"][value="' + (i+1) + '"]');
+                    var checkbox = $('input[name="stageEnabled"][value="' + i + '"]');
                     if (checkbox.is(':checked')) {
                         var ratio = $('input[data-index="' + i + '"]').val();
                         stages.push({
-                            stageNo: i + 1,
-                            stageName: stageNames[i],
-                            ratio: parseInt(ratio) || 0
+                            stage_code: stageCodes[i],
+                            stage_name: stageNames[i],
+                            stage_order: i + 1,
+                            workload_ratio: (parseInt(ratio) || 0) / 100.0
                         });
                     }
                 }
                 
                 var formData = $("#form-stageTemplate-edit").serializeArray();
-                formData.push({name: "stageConfig", value: JSON.stringify(stages)});
+                formData.push({name: "stagesConfig", value: JSON.stringify(stages)});
                 formData.push({name: "status", value: $("#status").is(":checked") ? "0" : "1"});
                 
                 $.operate.save(prefix + "/edit", formData);

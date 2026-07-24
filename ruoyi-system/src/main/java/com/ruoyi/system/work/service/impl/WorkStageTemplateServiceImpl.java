@@ -1,9 +1,14 @@
 package com.ruoyi.system.work.service.impl;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.common.exception.ServiceException;
@@ -120,6 +125,8 @@ public class WorkStageTemplateServiceImpl implements IWorkStageTemplateService
         {
             throw new ServiceException("新增模板'" + workStageTemplate.getTemplateName() + "'失败，模板名称已存在");
         }
+        // 验证阶段配置 JSON
+        validateStagesConfig(workStageTemplate.getStagesConfig());
         return stageTemplateMapper.insertStageTemplate(workStageTemplate);
     }
 
@@ -137,6 +144,8 @@ public class WorkStageTemplateServiceImpl implements IWorkStageTemplateService
         {
             throw new ServiceException("修改模板'" + workStageTemplate.getTemplateName() + "'失败，模板名称已存在");
         }
+        // 验证阶段配置 JSON
+        validateStagesConfig(workStageTemplate.getStagesConfig());
         return stageTemplateMapper.updateStageTemplate(workStageTemplate);
     }
 
@@ -179,10 +188,20 @@ public class WorkStageTemplateServiceImpl implements IWorkStageTemplateService
     @Transactional
     public int setDefaultTemplate(Long templateId)
     {
-        // 先将所有模板设为非默认
-        WorkStageTemplate allTemplate = new WorkStageTemplate();
-        allTemplate.setIsDefault("0");
-        stageTemplateMapper.updateStageTemplate(allTemplate);
+        if (templateId == null)
+        {
+            throw new ServiceException("模板 ID 不能为空");
+        }
+        
+        // 先取消当前默认模板（如果有）
+        WorkStageTemplate currentDefault = selectDefaultTemplate();
+        if (currentDefault != null && !currentDefault.getTemplateId().equals(templateId))
+        {
+            WorkStageTemplate updateTemplate = new WorkStageTemplate();
+            updateTemplate.setTemplateId(currentDefault.getTemplateId());
+            updateTemplate.setIsDefault("0");
+            stageTemplateMapper.updateStageTemplate(updateTemplate);
+        }
         
         // 再将指定模板设为默认
         WorkStageTemplate template = new WorkStageTemplate();
@@ -207,5 +226,70 @@ public class WorkStageTemplateServiceImpl implements IWorkStageTemplateService
             return UserConstants.NOT_UNIQUE;
         }
         return UserConstants.UNIQUE;
+    }
+
+    /**
+     * 验证阶段配置 JSON
+     * 
+     * @param stagesConfig 阶段配置 JSON 字符串
+     */
+    private void validateStagesConfig(String stagesConfig)
+    {
+        if (StringUtils.isEmpty(stagesConfig))
+        {
+            throw new ServiceException("阶段配置不能为空");
+        }
+        try
+        {
+            JSONArray stages = JSON.parseArray(stagesConfig);
+            if (stages == null || stages.isEmpty())
+            {
+                throw new ServiceException("阶段配置不能为空");
+            }
+            
+            double totalRatio = 0;
+            Set<String> stageCodes = new HashSet<>();
+            
+            for (int i = 0; i < stages.size(); i++)
+            {
+                JSONObject stage = stages.getJSONObject(i);
+                
+                // 验证必填字段
+                if (!stage.containsKey("stage_code") || !stage.containsKey("stage_name"))
+                {
+                    throw new ServiceException("阶段配置缺少必填字段：stage_code, stage_name");
+                }
+                
+                // 检查 stage_code 重复
+                String stageCode = stage.getString("stage_code");
+                if (stageCodes.contains(stageCode))
+                {
+                    throw new ServiceException("阶段编码重复：" + stageCode);
+                }
+                stageCodes.add(stageCode);
+                
+                // 累加工时占比
+                Double ratio = stage.getDouble("workload_ratio");
+                if (ratio == null)
+                {
+                    ratio = 0.0;
+                }
+                totalRatio += ratio;
+            }
+            
+            // 验证工时占比总和（允许 0.01 的误差）
+            if (Math.abs(totalRatio - 1.0) > 0.01)
+            {
+                throw new ServiceException("工时占比总和必须为 100%，当前为" + String.format("%.2f", totalRatio * 100) + "%");
+            }
+        }
+        catch (ServiceException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("阶段配置格式错误：" + e.getMessage());
+        }
     }
 }

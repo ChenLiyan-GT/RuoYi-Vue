@@ -26,6 +26,10 @@ public class WorkStageTemplate extends BaseEntity
     @Excel(name = "适用部门 ID")
     private Long deptId;
 
+    /** 适用部门名(NULL 通用) */
+    @Excel(name = "适用部门名")
+    private String deptName;
+
     /** 阶段配置 (JSON) */
     @Excel(name = "阶段配置")
     private String stagesConfig;
@@ -45,6 +49,10 @@ public class WorkStageTemplate extends BaseEntity
     /** 状态 (0 启用 1 禁用) */
     @Excel(name = "状态", readConverterExp = "0=启用，1=禁用")
     private String status;
+
+    /** 备注 */
+    @Excel(name = "备注")
+    private String remark;
 
     /** 删除标志 */
     private String delFlag;
@@ -77,6 +85,16 @@ public class WorkStageTemplate extends BaseEntity
     public void setDeptId(Long deptId)
     {
         this.deptId = deptId;
+    }
+
+    public String getDeptName()
+    {
+        return deptName;
+    }
+
+    public void setDeptName(String deptName)
+    {
+        this.deptName = deptName;
     }
 
     public String getStagesConfig()
@@ -129,6 +147,16 @@ public class WorkStageTemplate extends BaseEntity
         this.status = status;
     }
 
+    public String getRemark()
+    {
+        return remark;
+    }
+
+    public void setRemark(String remark)
+    {
+        this.remark = remark;
+    }
+
     public String getDelFlag()
     {
         return delFlag;
@@ -145,11 +173,13 @@ public class WorkStageTemplate extends BaseEntity
             .append("templateId", getTemplateId())
             .append("templateName", getTemplateName())
             .append("deptId", getDeptId())
+            .append("deptName", getDeptName())
             .append("stagesConfig", getStagesConfig())
             .append("isDefault", getIsDefault())
             .append("version", getVersion())
             .append("usageCount", getUsageCount())
             .append("status", getStatus())
+            .append("remark", getRemark())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())
